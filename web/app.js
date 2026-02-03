@@ -24,6 +24,9 @@ const statusEl = document.getElementById('status');
 const bulletsList = document.getElementById('bulletsList');
 const exportBulletsBtn = document.getElementById('exportBulletsBtn');
 
+// Bullets state
+let allBullets = [];
+
 // State
 let isStreaming = false;
 let sessionId = null;
@@ -293,8 +296,13 @@ async function sendMessage(message) {
             const data = JSON.parse(line.slice(6));
             if (data.type === 'chunk') {
               fullContent += data.content;
-              assistantBubble.innerHTML = formatMessage(fullContent);
+              // Remove bullet blocks from display
+              const displayContent = fullContent.replace(/```bullet[\s\S]*?```/g, '').trim();
+              assistantBubble.innerHTML = formatMessage(displayContent);
               messagesEl.scrollTop = messagesEl.scrollHeight;
+            } else if (data.type === 'done' && data.bullet) {
+              // Add extracted bullet to sidebar
+              addBullet(data.bullet);
             } else if (data.type === 'error') {
               assistantBubble.innerHTML = `<span class="text-red-300">Error: ${data.error}</span>`;
             }
@@ -327,4 +335,84 @@ messageInput.addEventListener('keydown', (e) => {
     e.preventDefault();
     chatForm.dispatchEvent(new Event('submit'));
   }
+});
+
+// ============= Bullets Sidebar =============
+
+function addBullet(bullet) {
+  allBullets.push(bullet);
+  renderBullets();
+}
+
+function renderBullets() {
+  if (allBullets.length === 0) {
+    bulletsList.innerHTML = '<p class="text-gray-500 text-sm">Bullets will appear here as you chat...</p>';
+    exportBulletsBtn.classList.add('hidden');
+    return;
+  }
+
+  // Group by company/title
+  const groups = {};
+  for (const bullet of allBullets) {
+    const key = `${bullet.company}|${bullet.title}`;
+    if (!groups[key]) {
+      groups[key] = { company: bullet.company, title: bullet.title, bullets: [] };
+    }
+    groups[key].bullets.push(bullet);
+  }
+
+  let html = '';
+  for (const group of Object.values(groups)) {
+    html += `
+      <div class="bg-gray-700 rounded-lg p-3">
+        <p class="font-medium text-white text-sm">${group.company}</p>
+        <p class="text-xs text-purple-300 mb-2">${group.title}</p>
+        <ul class="space-y-2">
+          ${group.bullets.map(b => `
+            <li class="text-sm text-gray-200 flex items-start gap-2">
+              ${b.isStrong ? '<span class="text-green-400 font-bold" title="Strong bullet">↑</span>' : '<span class="w-3"></span>'}
+              <span>${b.text}</span>
+            </li>
+          `).join('')}
+        </ul>
+      </div>
+    `;
+  }
+
+  bulletsList.innerHTML = html;
+  exportBulletsBtn.classList.remove('hidden');
+}
+
+// Export bullets
+exportBulletsBtn.addEventListener('click', () => {
+  if (allBullets.length === 0) return;
+
+  // Group and format
+  const groups = {};
+  for (const bullet of allBullets) {
+    const key = `${bullet.company}|${bullet.title}`;
+    if (!groups[key]) {
+      groups[key] = { company: bullet.company, title: bullet.title, bullets: [] };
+    }
+    groups[key].bullets.push(bullet);
+  }
+
+  let text = 'GENERATED RESUME BULLETS\n========================\n\n';
+  for (const group of Object.values(groups)) {
+    text += `${group.title} | ${group.company}\n`;
+    text += '-'.repeat(40) + '\n';
+    for (const b of group.bullets) {
+      text += `${b.isStrong ? '↑ ' : '• '}${b.text}\n`;
+    }
+    text += '\n';
+  }
+
+  // Copy to clipboard
+  navigator.clipboard.writeText(text).then(() => {
+    const originalText = exportBulletsBtn.textContent;
+    exportBulletsBtn.textContent = '✓ Copied!';
+    setTimeout(() => {
+      exportBulletsBtn.textContent = originalText;
+    }, 2000);
+  });
 });
