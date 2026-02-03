@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { streamText } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { getSession, addSessionMessage, getSessionMessages, addSessionBullet } from '../services/session-store.js';
 import { createScoredBullet } from '../services/bullet-scorer.js';
 import { randomUUID } from 'crypto';
@@ -17,10 +17,10 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     // Configure OpenRouter as the provider (inside handler so env is loaded)
-    const openrouter = createOpenAI({
+    const openrouter = createOpenAICompatible({
+      name: 'openrouter',
       baseURL: 'https://openrouter.ai/api/v1',
       apiKey: process.env.OPENROUTER_API_KEY!,
-      compatibility: 'strict', // Use strict OpenAI API compatibility (not Responses API)
     });
 
     // Get session context
@@ -128,7 +128,7 @@ The JSON block MUST be included at the end. Without it, the bullet won't be save
     
     // Use AI SDK streamText
     const result = streamText({
-      model: openrouter('openai/gpt-4-turbo'),
+      model: openrouter.chatModel('openai/gpt-4-turbo'),
       system: systemPrompt,
       messages,
     });
