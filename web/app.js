@@ -1,5 +1,18 @@
 // Resume Update Assistant - Frontend
 
+// DOM Elements
+const uploadSection = document.getElementById('uploadSection');
+const timelineSection = document.getElementById('timelineSection');
+const chatSection = document.getElementById('chatSection');
+const bulletsSidebar = document.getElementById('bulletsSidebar');
+
+const resumeFile = document.getElementById('resumeFile');
+const uploadBtn = document.getElementById('uploadBtn');
+const resumeText = document.getElementById('resumeText');
+const parseTextBtn = document.getElementById('parseTextBtn');
+const confirmTimelineBtn = document.getElementById('confirmTimelineBtn');
+const timelineEl = document.getElementById('timeline');
+
 const messagesEl = document.getElementById('messages');
 const chatForm = document.getElementById('chatForm');
 const messageInput = document.getElementById('messageInput');
@@ -7,9 +20,172 @@ const sendBtn = document.getElementById('sendBtn');
 const typingEl = document.getElementById('typing');
 const statusEl = document.getElementById('status');
 
-let isStreaming = false;
+const bulletsList = document.getElementById('bulletsList');
+const exportBulletsBtn = document.getElementById('exportBulletsBtn');
 
-// Add a message to the chat
+// State
+let isStreaming = false;
+let sessionId = null;
+let parsedResume = null;
+
+// ============= Upload & Parse =============
+
+uploadBtn.addEventListener('click', async () => {
+  const file = resumeFile.files[0];
+  if (!file) {
+    alert('Please select a PDF file');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('resume', file);
+
+  setStatus('Uploading and parsing resume...');
+  uploadBtn.disabled = true;
+
+  try {
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const data = await response.json();
+    
+    if (data.success && data.resume) {
+      sessionId = data.sessionId;
+      parsedResume = data.resume;
+      showTimeline(data.resume, data.mostRecentRoleIndex);
+      setStatus('Resume parsed! Review your timeline.');
+    } else {
+      alert(data.warning || data.error || 'Failed to parse resume');
+      setStatus('Upload failed');
+    }
+  } catch (error) {
+    console.error('Upload error:', error);
+    alert('Failed to upload file');
+    setStatus('Upload failed');
+  } finally {
+    uploadBtn.disabled = false;
+  }
+});
+
+parseTextBtn.addEventListener('click', async () => {
+  const text = resumeText.value.trim();
+  if (!text) {
+    alert('Please paste some resume text');
+    return;
+  }
+
+  setStatus('Parsing text...');
+  parseTextBtn.disabled = true;
+
+  try {
+    const response = await fetch('/api/parse-text', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+
+    const data = await response.json();
+    
+    if (data.success && data.resume) {
+      sessionId = data.sessionId;
+      parsedResume = data.resume;
+      showTimeline(data.resume, data.mostRecentRoleIndex);
+      setStatus('Text parsed! Review your timeline.');
+    } else {
+      alert(data.error || 'Failed to parse text');
+      setStatus('Parse failed');
+    }
+  } catch (error) {
+    console.error('Parse error:', error);
+    alert('Failed to parse text');
+    setStatus('Parse failed');
+  } finally {
+    parseTextBtn.disabled = false;
+  }
+});
+
+// ============= Timeline =============
+
+function showTimeline(resume, mostRecentIndex) {
+  uploadSection.classList.add('hidden');
+  timelineSection.classList.remove('hidden');
+  
+  // Build timeline HTML
+  let html = '';
+  
+  // Contact info
+  if (resume.contact) {
+    html += `
+      <div class="bg-gray-700 rounded-lg p-3 mb-4">
+        <p class="font-medium text-white">${resume.contact.name}</p>
+        <p class="text-sm text-gray-400">
+          ${[resume.contact.email, resume.contact.phone, resume.contact.location].filter(Boolean).join(' • ')}
+        </p>
+      </div>
+    `;
+  }
+  
+  // Experience
+  resume.experience.forEach((exp, index) => {
+    const isCurrent = index === mostRecentIndex || exp.isCurrentRole;
+    html += `
+      <div class="timeline-card ${isCurrent ? 'current' : ''} bg-gray-700 rounded-lg p-3 pl-4">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="font-medium text-white">${exp.title}</p>
+            <p class="text-sm text-purple-300">${exp.company}</p>
+          </div>
+          <div class="text-right">
+            <p class="text-sm text-gray-400">${exp.startDate} - ${exp.endDate}</p>
+            ${isCurrent ? '<span class="text-xs bg-green-600 text-white px-2 py-0.5 rounded">Current</span>' : ''}
+          </div>
+        </div>
+        ${exp.bullets.length > 0 ? `
+          <ul class="mt-2 text-sm text-gray-300 list-disc list-inside">
+            ${exp.bullets.slice(0, 2).map(b => `<li class="truncate">${b}</li>`).join('')}
+            ${exp.bullets.length > 2 ? `<li class="text-gray-500">+${exp.bullets.length - 2} more...</li>` : ''}
+          </ul>
+        ` : ''}
+      </div>
+    `;
+  });
+  
+  // Skills summary
+  if (resume.skills && resume.skills.length > 0) {
+    html += `
+      <div class="bg-gray-700 rounded-lg p-3 mt-4">
+        <p class="text-sm text-gray-400 mb-1">Skills</p>
+        <p class="text-sm text-white">${resume.skills.slice(0, 8).join(', ')}${resume.skills.length > 8 ? '...' : ''}</p>
+      </div>
+    `;
+  }
+  
+  timelineEl.innerHTML = html;
+}
+
+confirmTimelineBtn.addEventListener('click', () => {
+  timelineSection.classList.add('hidden');
+  chatSection.classList.remove('hidden');
+  bulletsSidebar.classList.remove('hidden');
+  startChat();
+});
+
+// ============= Chat =============
+
+function startChat() {
+  // Add initial AI message based on resume
+  const mostRecent = parsedResume.experience[0];
+  const greeting = mostRecent 
+    ? `Great! I see your most recent role was **${mostRecent.title}** at **${mostRecent.company}** (${mostRecent.startDate} - ${mostRecent.endDate}). Let's dig into what you accomplished there.\n\nTell me about a project or achievement you're particularly proud of from this role.`
+    : `I've reviewed your resume. Let's work on uncovering accomplishments you might have forgotten to document.\n\nTell me about your most recent role - what project or achievement are you most proud of?`;
+  
+  addMessage(greeting, 'assistant');
+  setStatus('Ready to chat');
+  messageInput.focus();
+}
+
 function addMessage(content, role) {
   const messageDiv = document.createElement('div');
   messageDiv.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'}`;
@@ -22,14 +198,11 @@ function addMessage(content, role) {
   bubble.innerHTML = formatMessage(content);
   messageDiv.appendChild(bubble);
   messagesEl.appendChild(messageDiv);
-  
-  // Scroll to bottom
   messagesEl.scrollTop = messagesEl.scrollHeight;
   
   return bubble;
 }
 
-// Format message content (basic markdown support)
 function formatMessage(content) {
   return content
     .replace(/\n/g, '<br>')
@@ -37,46 +210,39 @@ function formatMessage(content) {
     .replace(/\*(.*?)\*/g, '<em>$1</em>');
 }
 
-// Show/hide typing indicator
 function setTyping(show) {
   typingEl.classList.toggle('hidden', !show);
-  if (show) {
-    messagesEl.scrollTop = messagesEl.scrollHeight;
-  }
+  if (show) messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
-// Set UI state
 function setLoading(loading) {
   isStreaming = loading;
   sendBtn.disabled = loading;
   messageInput.disabled = loading;
-  statusEl.textContent = loading ? 'AI is responding...' : 'Ready to chat';
 }
 
-// Send message to API
+function setStatus(text) {
+  statusEl.textContent = text;
+}
+
 async function sendMessage(message) {
-  // Add user message to chat
   addMessage(message, 'user');
-  
   setLoading(true);
   setTyping(true);
-  
+  setStatus('AI is responding...');
+
   try {
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ message, sessionId }),
     });
 
-    if (!response.ok) {
-      throw new Error('Failed to send message');
-    }
+    if (!response.ok) throw new Error('Failed to send message');
 
-    // Create assistant message bubble
     const assistantBubble = addMessage('', 'assistant');
     setTyping(false);
     
-    // Read the stream
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let fullContent = '';
@@ -92,7 +258,6 @@ async function sendMessage(message) {
         if (line.startsWith('data: ')) {
           try {
             const data = JSON.parse(line.slice(6));
-            
             if (data.type === 'chunk') {
               fullContent += data.content;
               assistantBubble.innerHTML = formatMessage(fullContent);
@@ -100,40 +265,33 @@ async function sendMessage(message) {
             } else if (data.type === 'error') {
               assistantBubble.innerHTML = `<span class="text-red-300">Error: ${data.error}</span>`;
             }
-          } catch (e) {
-            // Ignore parse errors for incomplete chunks
-          }
+          } catch (e) {}
         }
       }
     }
 
+    setStatus('Ready to chat');
   } catch (error) {
     console.error('Chat error:', error);
     setTyping(false);
     addMessage('Sorry, there was an error. Please try again.', 'assistant');
+    setStatus('Error occurred');
   } finally {
     setLoading(false);
   }
 }
 
-// Handle form submission
 chatForm.addEventListener('submit', (e) => {
   e.preventDefault();
-  
   const message = messageInput.value.trim();
   if (!message || isStreaming) return;
-  
   messageInput.value = '';
   sendMessage(message);
 });
 
-// Handle Enter key
 messageInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
     chatForm.dispatchEvent(new Event('submit'));
   }
 });
-
-// Focus input on load
-messageInput.focus();

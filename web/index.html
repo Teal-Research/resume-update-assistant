@@ -22,69 +22,122 @@
       0%, 80%, 100% { opacity: 0; }
       40% { opacity: 1; }
     }
+    .timeline-card {
+      border-left: 3px solid #7c3aed;
+    }
+    .timeline-card.current {
+      border-left-color: #22c55e;
+    }
   </style>
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen">
-  <div class="container mx-auto p-4 max-w-4xl">
+  <div class="container mx-auto p-4 max-w-6xl">
     <!-- Header -->
     <div class="mb-6">
       <h1 class="text-3xl font-bold text-purple-400 mb-2">📝 Resume Update Assistant</h1>
       <p class="text-gray-400">Chat with AI to uncover accomplishments and update your resume</p>
     </div>
 
-    <!-- Chat Container -->
-    <div class="bg-gray-800 rounded-lg shadow-xl overflow-hidden">
-      <!-- Messages Area -->
-      <div id="messages" class="chat-container overflow-y-auto p-4 space-y-4">
-        <!-- Welcome message -->
-        <div class="flex justify-start">
-          <div class="message-assistant text-white px-4 py-3 rounded-lg max-w-[80%]">
-            <p>👋 Hi! I'm your resume coach. I'll help you uncover accomplishments you may have forgotten to document.</p>
-            <p class="mt-2">To get started, you can either:</p>
-            <ul class="list-disc list-inside mt-1 text-sm opacity-90">
-              <li>Upload your current resume (PDF)</li>
-              <li>Just start chatting about your recent work experience</li>
-            </ul>
+    <div class="flex gap-6">
+      <!-- Main Chat Area -->
+      <div class="flex-1">
+        <!-- Upload Section (shown initially) -->
+        <div id="uploadSection" class="bg-gray-800 rounded-lg p-6 mb-4">
+          <h2 class="text-xl font-semibold text-purple-300 mb-4">Get Started</h2>
+          
+          <!-- PDF Upload -->
+          <div class="mb-4">
+            <label class="block text-sm text-gray-400 mb-2">Upload your resume (PDF)</label>
+            <div class="flex gap-3">
+              <input type="file" id="resumeFile" accept=".pdf" 
+                class="flex-1 bg-gray-700 text-white px-4 py-2 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-purple-600 file:text-white hover:file:bg-purple-700">
+              <button id="uploadBtn" 
+                class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50">
+                Upload
+              </button>
+            </div>
+          </div>
+          
+          <!-- OR divider -->
+          <div class="flex items-center my-4">
+            <div class="flex-1 border-t border-gray-600"></div>
+            <span class="px-4 text-gray-500 text-sm">or paste text</span>
+            <div class="flex-1 border-t border-gray-600"></div>
+          </div>
+          
+          <!-- Text paste -->
+          <div>
+            <label class="block text-sm text-gray-400 mb-2">Paste resume/LinkedIn text</label>
+            <textarea id="resumeText" rows="4" placeholder="Paste your resume content here..."
+              class="w-full bg-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder-gray-400 resize-none"></textarea>
+            <button id="parseTextBtn"
+              class="mt-2 bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+              Parse Text
+            </button>
+          </div>
+          
+          <p class="text-xs text-gray-500 mt-3">💡 Tip: For LinkedIn, visit your profile, paste the text from the Experience section</p>
+        </div>
+
+        <!-- Parsed Resume Timeline (hidden initially) -->
+        <div id="timelineSection" class="hidden bg-gray-800 rounded-lg p-6 mb-4">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-purple-300">Your Experience Timeline</h2>
+            <button id="confirmTimelineBtn" 
+              class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+              ✓ Looks Correct - Start Chat
+            </button>
+          </div>
+          <div id="timeline" class="space-y-3"></div>
+        </div>
+
+        <!-- Chat Container -->
+        <div id="chatSection" class="hidden bg-gray-800 rounded-lg shadow-xl overflow-hidden">
+          <!-- Messages Area -->
+          <div id="messages" class="chat-container overflow-y-auto p-4 space-y-4"></div>
+
+          <!-- Typing Indicator -->
+          <div id="typing" class="hidden px-4 pb-2">
+            <div class="flex items-center space-x-1 text-gray-400">
+              <span class="typing-indicator flex space-x-1">
+                <span class="w-2 h-2 bg-purple-400 rounded-full"></span>
+                <span class="w-2 h-2 bg-purple-400 rounded-full"></span>
+                <span class="w-2 h-2 bg-purple-400 rounded-full"></span>
+              </span>
+              <span class="text-sm ml-2">AI is thinking...</span>
+            </div>
+          </div>
+
+          <!-- Input Area -->
+          <div class="border-t border-gray-700 p-4">
+            <form id="chatForm" class="flex space-x-3">
+              <input type="text" id="messageInput" placeholder="Tell me about your accomplishments..."
+                class="flex-1 bg-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder-gray-400"
+                autocomplete="off">
+              <button type="submit" id="sendBtn"
+                class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                Send
+              </button>
+            </form>
           </div>
         </div>
       </div>
 
-      <!-- Typing Indicator (hidden by default) -->
-      <div id="typing" class="hidden px-4 pb-2">
-        <div class="flex items-center space-x-1 text-gray-400">
-          <span class="typing-indicator flex space-x-1">
-            <span class="w-2 h-2 bg-purple-400 rounded-full"></span>
-            <span class="w-2 h-2 bg-purple-400 rounded-full"></span>
-            <span class="w-2 h-2 bg-purple-400 rounded-full"></span>
-          </span>
-          <span class="text-sm ml-2">AI is thinking...</span>
+      <!-- Sidebar - Bullets (hidden initially) -->
+      <div id="bulletsSidebar" class="hidden w-80 bg-gray-800 rounded-lg p-4 h-fit sticky top-4">
+        <h2 class="text-lg font-semibold text-purple-300 mb-3">📋 Generated Bullets</h2>
+        <div id="bulletsList" class="space-y-4">
+          <p class="text-gray-500 text-sm">Bullets will appear here as you chat...</p>
         </div>
-      </div>
-
-      <!-- Input Area -->
-      <div class="border-t border-gray-700 p-4">
-        <form id="chatForm" class="flex space-x-3">
-          <input
-            type="text"
-            id="messageInput"
-            placeholder="Tell me about your recent work experience..."
-            class="flex-1 bg-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder-gray-400"
-            autocomplete="off"
-          >
-          <button
-            type="submit"
-            id="sendBtn"
-            class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Send
-          </button>
-        </form>
+        <button id="exportBulletsBtn" class="hidden mt-4 w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+          Export Bullets
+        </button>
       </div>
     </div>
 
     <!-- Status -->
     <div class="mt-4 text-center text-gray-500 text-sm">
-      <span id="status">Ready to chat</span>
+      <span id="status">Ready - Upload your resume to get started</span>
     </div>
   </div>
 
