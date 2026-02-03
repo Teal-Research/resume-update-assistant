@@ -106,12 +106,13 @@ router.post('/', async (req: Request, res: Response) => {
         addSkill: addSkillTool,
       },
       maxSteps: 5, // Allow multiple tool calls per turn
-      onStepFinish: async ({ stepType, toolCalls, toolResults }) => {
-        // Process tool results as they complete
-        if (stepType === 'tool-result' && toolResults) {
+      onStepFinish: async ({ toolResults }) => {
+        // Process tool results
+        if (toolResults && toolResults.length > 0) {
           for (const toolResult of toolResults) {
-            if (toolResult.toolName === 'addBullet' && toolResult.result?.bullet) {
-              const bulletData = toolResult.result.bullet;
+            const output = (toolResult as any).output;
+            if (toolResult.toolName === 'addBullet' && output?.bullet) {
+              const bulletData = output.bullet;
               extractedBullets.push(bulletData);
               
               // Add to session
@@ -129,8 +130,8 @@ router.post('/', async (req: Request, res: Response) => {
                 // Stream bullet to frontend immediately
                 res.write(`data: ${JSON.stringify({ type: 'bullet', bullet: scoredBullet })}\n\n`);
               }
-            } else if (toolResult.toolName === 'addSkill' && toolResult.result?.skill) {
-              const skillData = toolResult.result.skill;
+            } else if (toolResult.toolName === 'addSkill' && output?.skill) {
+              const skillData = output.skill;
               extractedSkills.push(skillData);
               
               // Add to session
