@@ -4,6 +4,7 @@ import path from 'path';
 import { randomUUID } from 'crypto';
 import { extractTextFromPDF, looksLikeResume } from '../services/resume-parser.js';
 import { extractResumeStructure, identifyMostRecentRole } from '../services/structure-extractor.js';
+import { createSession, setSessionResume } from '../services/session-store.js';
 
 const router = Router();
 
@@ -40,6 +41,7 @@ router.post('/', upload.single('resume'), async (req: Request, res: Response) =>
     }
 
     const sessionId = randomUUID();
+    createSession(sessionId);
     
     // Extract text from PDF
     const extracted = await extractTextFromPDF(req.file.path);
@@ -55,6 +57,8 @@ router.post('/', upload.single('resume'), async (req: Request, res: Response) =>
       try {
         resume = await extractResumeStructure(extracted.text);
         mostRecentRoleIndex = identifyMostRecentRole(resume.experience);
+        // Store resume in session
+        setSessionResume(sessionId, resume);
       } catch (error) {
         console.error('Structure extraction error:', error);
         // Continue without structured data

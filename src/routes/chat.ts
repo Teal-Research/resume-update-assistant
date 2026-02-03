@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { createOpenAI } from '@ai-sdk/openai';
 import { streamText } from 'ai';
+import { getSession, addSessionMessage, getSessionMessages } from '../services/session-store.js';
 
 const router = Router();
 
@@ -34,6 +35,15 @@ router.post('/', async (req: Request, res: Response) => {
       return;
     }
 
+    // Get session context
+    const session = sessionId ? getSession(sessionId) : null;
+    const previousMessages = session ? getSessionMessages(sessionId) : [];
+    
+    // Store user message
+    if (sessionId) {
+      addSessionMessage(sessionId, 'user', message);
+    }
+
     // Set up SSE headers
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -41,15 +51,44 @@ router.post('/', async (req: Request, res: Response) => {
 
     const provider = getProvider();
     
+    // Build system prompt with resume context
+    let systemPrompt = `You are a helpful resume coach. Help the user update their resume by asking targeted questions about their work experience and accomplishments.`;
+    
+    if (session?.resume) {
+      const resume = session.resume;
+      systemPrompt += `\n\nThe user's resume shows:\n`;
+      systemPrompt += `Name: ${resume.contact.name}\n`;
+      if (resume.experience.length > 0) {
+        systemPrompt += `\nExperience:\n`;
+        resume.experience.forEach((exp, i) => {
+          systemPrompt += `${i + 1}. ${exp.title} at ${exp.company} (${exp.startDate} - ${exp.endDate})${exp.isCurrentRole ? ' [CURRENT]' : ''}\n`;
+        });
+      }
+      systemPrompt += `\nFocus on asking about their most recent role and uncovering quantifiable accomplishments they may have forgotten.`;
+    }
+    
+    // Build messages array with history
+    const messages = [
+      ...previousMessages.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+      { role: 'user' as const, content: message }
+    ];
+    
     const result = streamText({
       model: provider('anthropic/claude-3.5-sonnet'),
-      system: `You are a helpful resume coach. Help the user update their resume by asking targeted questions about their work experience and accomplishments.`,
-      messages: [{ role: 'user', content: message }],
+      system: systemPrompt,
+      messages,
     });
 
-    // Stream the response
+    // Stream the response and capture full text
+    let fullResponse = '';
     for await (const chunk of result.textStream) {
+      fullResponse += chunk;
       res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`);
+    }
+    
+    // Store assistant message
+    if (sessionId && fullResponse) {
+      addSessionMessage(sessionId, 'assistant', fullResponse);
     }
 
     res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);

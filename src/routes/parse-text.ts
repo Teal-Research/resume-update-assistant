@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { randomUUID } from 'crypto';
 import { looksLikeResume } from '../services/resume-parser.js';
 import { extractResumeStructure, identifyMostRecentRole } from '../services/structure-extractor.js';
+import { createSession, setSessionResume } from '../services/session-store.js';
 
 const router = Router();
 
@@ -19,6 +20,7 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     const sessionId = randomUUID();
+    createSession(sessionId);
     const isResume = looksLikeResume(text);
     
     let resume = null;
@@ -27,6 +29,8 @@ router.post('/', async (req: Request, res: Response) => {
     if (text.length > 50) {
       resume = await extractResumeStructure(text);
       mostRecentRoleIndex = identifyMostRecentRole(resume.experience);
+      // Store resume in session
+      setSessionResume(sessionId, resume);
     }
     
     res.json({
