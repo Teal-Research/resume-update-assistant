@@ -34,6 +34,7 @@ export interface Bullet {
   text: string;
   isStrong: boolean;
   score: number;
+  isImported?: boolean; // true if imported from resume, false/undefined if AI-extracted
 }
 
 export interface Skill {

@@ -51,11 +51,28 @@ export function getOrCreateSession(id: string): Session {
 }
 
 /**
- * Update session with parsed resume
+ * Update session with parsed resume and import bullets
  */
 export function setSessionResume(id: string, resume: ParsedResume): void {
   const session = getOrCreateSession(id);
   session.resume = resume;
+  
+  // Import bullets from resume experience
+  for (const exp of resume.experience) {
+    for (const bulletText of exp.bullets) {
+      if (bulletText.trim()) {
+        session.bullets.push({
+          id: `imported-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          company: exp.company,
+          title: exp.title,
+          text: bulletText.trim(),
+          isStrong: false, // We don't score imported bullets
+          score: 0,
+          isImported: true,
+        });
+      }
+    }
+  }
 }
 
 /**

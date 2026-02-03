@@ -62,6 +62,11 @@ uploadBtn.addEventListener('click', async () => {
     if (data.success && data.resume) {
       sessionId = data.sessionId;
       parsedResume = data.resume;
+      // Load imported bullets
+      if (data.bullets && data.bullets.length > 0) {
+        allBullets = data.bullets;
+        renderBullets();
+      }
       showTimeline(data.resume, data.mostRecentRoleIndex);
       setStatus('Resume parsed! Review your timeline.');
     } else {
@@ -99,6 +104,11 @@ parseTextBtn.addEventListener('click', async () => {
     if (data.success && data.resume) {
       sessionId = data.sessionId;
       parsedResume = data.resume;
+      // Load imported bullets
+      if (data.bullets && data.bullets.length > 0) {
+        allBullets = data.bullets;
+        renderBullets();
+      }
       showTimeline(data.resume, data.mostRecentRoleIndex);
       setStatus('Text parsed! Review your timeline.');
     } else {
@@ -136,6 +146,11 @@ linkedinBtn.addEventListener('click', async () => {
     if (data.success && data.resume) {
       sessionId = data.sessionId;
       parsedResume = data.resume;
+      // Load imported bullets
+      if (data.bullets && data.bullets.length > 0) {
+        allBullets = data.bullets;
+        renderBullets();
+      }
       showTimeline(data.resume, data.mostRecentRoleIndex);
       setStatus(data.note || 'LinkedIn imported! Review your timeline.');
     } else {
@@ -522,7 +537,7 @@ function renderBullets() {
         <ul class="space-y-2">
           ${group.bullets.map((b, i) => `
             <li class="text-sm text-gray-200 flex items-start gap-2 group">
-              ${b.isStrong ? '<span class="text-green-400 font-bold" title="Strong bullet">↑</span>' : '<span class="w-3"></span>'}
+              <span class="shrink-0" title="${b.isImported ? 'Imported from resume' : 'AI-extracted'}">${b.isImported ? '📄' : '✨'}</span>
               <span class="flex-1">${b.text}</span>
               <button 
                 class="copy-bullet-btn opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-white p-1" 
@@ -583,7 +598,7 @@ exportBulletsBtn.addEventListener('click', () => {
     text += `${group.title} | ${group.company}\n`;
     text += '-'.repeat(40) + '\n';
     for (const b of group.bullets) {
-      text += `${b.isStrong ? '↑ ' : '• '}${b.text}\n`;
+      text += `${b.isImported ? '📄 ' : '✨ '}${b.text}\n`;
     }
     text += '\n';
   }

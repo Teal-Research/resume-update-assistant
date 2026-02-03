@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { randomUUID } from 'crypto';
 import { looksLikeResume } from '../services/resume-parser.js';
 import { extractResumeStructure, identifyMostRecentRole } from '../services/structure-extractor.js';
-import { createSession, setSessionResume } from '../services/session-store.js';
+import { createSession, setSessionResume, getSessionBullets } from '../services/session-store.js';
 
 const router = Router();
 
@@ -33,6 +33,9 @@ router.post('/', async (req: Request, res: Response) => {
       setSessionResume(sessionId, resume);
     }
     
+    // Get imported bullets from session
+    const bullets = getSessionBullets(sessionId);
+    
     res.json({
       success: true,
       sessionId,
@@ -41,6 +44,7 @@ router.post('/', async (req: Request, res: Response) => {
         isResume,
       },
       resume,
+      bullets, // Include imported bullets
       mostRecentRoleIndex,
     });
 

@@ -4,7 +4,7 @@ import path from 'path';
 import { randomUUID } from 'crypto';
 import { extractTextFromPDF, looksLikeResume } from '../services/resume-parser.js';
 import { extractResumeStructure, identifyMostRecentRole } from '../services/structure-extractor.js';
-import { createSession, setSessionResume } from '../services/session-store.js';
+import { createSession, setSessionResume, getSessionBullets } from '../services/session-store.js';
 
 const router = Router();
 
@@ -65,6 +65,9 @@ router.post('/', upload.single('resume'), async (req: Request, res: Response) =>
       }
     }
     
+    // Get imported bullets from session
+    const bullets = getSessionBullets(sessionId);
+    
     res.json({
       success: true,
       sessionId,
@@ -79,6 +82,7 @@ router.post('/', upload.single('resume'), async (req: Request, res: Response) =>
         isResume,
       },
       resume,
+      bullets, // Include imported bullets
       mostRecentRoleIndex,
       warning: isResume ? undefined : 'This document may not be a resume. Please verify.',
     });

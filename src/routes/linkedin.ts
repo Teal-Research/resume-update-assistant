@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { randomUUID } from 'crypto';
 import { fetchLinkedInProfile, parseLinkedInHTML, isLinkedInUrl } from '../services/linkedin-parser.js';
 import { extractResumeStructure, identifyMostRecentRole } from '../services/structure-extractor.js';
-import { createSession, setSessionResume } from '../services/session-store.js';
+import { createSession, setSessionResume, getSessionBullets } from '../services/session-store.js';
 
 const router = Router();
 
@@ -71,10 +71,14 @@ router.post('/', async (req: Request, res: Response) => {
         resume = partialResume;
       }
 
+      // Get imported bullets from session
+      const bullets = getSessionBullets(sessionId);
+      
       res.json({
         success: true,
         sessionId,
         resume,
+        bullets, // Include imported bullets
         mostRecentRoleIndex,
         note: 'LinkedIn data may be incomplete. Please verify and add missing details.',
       });
