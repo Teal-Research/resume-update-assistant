@@ -27,7 +27,7 @@ EXAMPLES:
   → "Optimized API response time by 90% (2s → 200ms) through query optimization and Redis caching"
 - User: "led a team of 4 to ship the new checkout flow"
   → "Spearheaded cross-functional team of 4 engineers to deliver redesigned checkout flow, increasing conversion by 15%"`,
-  parameters: z.object({
+  inputSchema: z.object({
     company: z.string().describe('Company name where this accomplishment occurred'),
     title: z.string().describe('Job title at the time of this accomplishment'),
     text: z.string().describe('The polished, professional bullet point text (use strong action verbs, include metrics)'),
@@ -56,7 +56,7 @@ Categories:
 - "methodology": Processes/practices (Agile, Scrum, TDD, CI/CD, Code Review, etc.)
 
 Call this tool whenever you notice a skill - don't wait for bullet extraction.`,
-  parameters: z.object({
+  inputSchema: z.object({
     name: z.string().describe('Name of the skill (e.g., "Python", "AWS", "Leadership")'),
     category: z.enum(['technical', 'tool', 'soft', 'methodology']).describe('Category of the skill'),
   }),
