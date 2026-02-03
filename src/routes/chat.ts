@@ -1,4 +1,6 @@
 import { Router, Request, Response } from 'express';
+import { streamText } from 'ai';
+import { createOpenAI } from '@ai-sdk/openai';
 import { getSession, addSessionMessage, getSessionMessages, addSessionBullet } from '../services/session-store.js';
 import { createScoredBullet } from '../services/bullet-scorer.js';
 import { randomUUID } from 'crypto';
@@ -13,6 +15,13 @@ router.post('/', async (req: Request, res: Response) => {
       res.status(400).json({ error: 'Message is required' });
       return;
     }
+
+    // Configure OpenRouter as the provider (inside handler so env is loaded)
+    const openrouter = createOpenAI({
+      baseURL: 'https://openrouter.ai/api/v1',
+      apiKey: process.env.OPENROUTER_API_KEY!,
+      compatibility: 'strict', // Use strict OpenAI API compatibility (not Responses API)
+    });
 
     // Get session context
     const session = sessionId ? getSession(sessionId) : null;
@@ -108,68 +117,28 @@ What else did you accomplish at TechCorp?
 
 The JSON block MUST be included at the end. Without it, the bullet won't be saved to the sidebar.`;
     
-    // Build messages array
-    const messages = [
-      { role: 'system', content: systemPrompt },
-      ...previousMessages.map(m => ({ role: m.role, content: m.content })),
+    // Build messages array for AI SDK
+    const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [
+      ...previousMessages.map(m => ({ 
+        role: m.role as 'user' | 'assistant', 
+        content: m.content 
+      })),
       { role: 'user', content: message }
     ];
     
-    // Direct fetch to OpenRouter with streaming
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'openai/gpt-4-turbo',
-        messages,
-        stream: true,
-      }),
+    // Use AI SDK streamText
+    const result = streamText({
+      model: openrouter('openai/gpt-4-turbo'),
+      system: systemPrompt,
+      messages,
     });
-
-    if (!response.ok) {
-      const error = await response.text();
-      console.error('OpenRouter error:', error);
-      res.write(`data: ${JSON.stringify({ type: 'error', error: 'API error' })}\n\n`);
-      res.end();
-      return;
-    }
 
     // Stream the response
     let fullResponse = '';
-    const reader = response.body?.getReader();
-    const decoder = new TextDecoder();
-
-    if (!reader) {
-      res.write(`data: ${JSON.stringify({ type: 'error', error: 'No response body' })}\n\n`);
-      res.end();
-      return;
-    }
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split('\n').filter(line => line.trim().startsWith('data:'));
-
-      for (const line of lines) {
-        const data = line.replace(/^data:\s*/, '').trim();
-        if (data === '[DONE]') continue;
-        
-        try {
-          const parsed = JSON.parse(data);
-          const content = parsed.choices?.[0]?.delta?.content;
-          if (content) {
-            fullResponse += content;
-            res.write(`data: ${JSON.stringify({ type: 'chunk', content })}\n\n`);
-          }
-        } catch (e) {
-          // Skip unparseable chunks
-        }
-      }
+    
+    for await (const chunk of result.textStream) {
+      fullResponse += chunk;
+      res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`);
     }
     
     // Extract any bullets from the response
