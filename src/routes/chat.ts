@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { createOpenAI } from '@ai-sdk/openai';
 import { streamText } from 'ai';
 import { getSession, addSessionMessage, getSessionMessages, addSessionBullet } from '../services/session-store.js';
+import { createScoredBullet } from '../services/bullet-scorer.js';
 import { randomUUID } from 'crypto';
 
 const router = Router();
@@ -126,14 +127,13 @@ Only include the bullet block when you've extracted a clear accomplishment.`;
     if (bulletMatch && sessionId) {
       try {
         const bulletData = JSON.parse(bulletMatch[1]);
-        extractedBullet = {
-          id: randomUUID(),
-          company: bulletData.company || '',
-          title: bulletData.title || '',
-          text: bulletData.text || '',
-          isStrong: Boolean(bulletData.isStrong),
-          score: bulletData.isStrong ? 5 : 3,
-        };
+        // Use scorer for proper strength evaluation
+        extractedBullet = createScoredBullet(
+          bulletData.company || '',
+          bulletData.title || '',
+          bulletData.text || '',
+          randomUUID()
+        );
         addSessionBullet(sessionId, extractedBullet);
       } catch (e) {
         console.error('Failed to parse bullet:', e);
