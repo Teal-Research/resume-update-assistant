@@ -1,30 +1,10 @@
-import { createOpenAI } from '@ai-sdk/openai';
-import { generateText } from 'ai';
 import type { ParsedResume, Experience, Education, Contact } from '../types/index.js';
-
-// OpenRouter provider
-let openrouter: ReturnType<typeof createOpenAI> | null = null;
-
-function getProvider() {
-  if (!openrouter) {
-    openrouter = createOpenAI({
-      baseURL: 'https://openrouter.ai/api/v1',
-      apiKey: process.env.OPENROUTER_API_KEY || '',
-      compatibility: 'strict', // Force chat completions API
-    });
-  }
-  return openrouter;
-}
 
 /**
  * Extract structured resume data from raw text using LLM
  */
 export async function extractResumeStructure(rawText: string): Promise<ParsedResume> {
-  const provider = getProvider();
-  
-  const result = await generateText({
-    model: provider('openai/gpt-4-turbo'),
-    system: `You are a resume parser. Extract structured data from resume text and respond ONLY with valid JSON matching this schema:
+  const systemPrompt = `You are a resume parser. Extract structured data from resume text and respond ONLY with valid JSON matching this schema:
 
 {
   "contact": {
@@ -56,14 +36,37 @@ export async function extractResumeStructure(rawText: string): Promise<ParsedRes
 Important:
 - Order experience from most recent to oldest
 - Mark the most recent role as isCurrentRole: true
-- Respond with ONLY the JSON, no other text`,
-    prompt: rawText,
+- Respond with ONLY the JSON, no other text`;
+
+  // Direct fetch to OpenRouter chat/completions (bypasses AI SDK parsing issues)
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: 'openai/gpt-4-turbo',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: rawText }
+      ],
+    }),
   });
+
+  if (!response.ok) {
+    const error = await response.text();
+    console.error('OpenRouter error:', error);
+    throw new Error(`OpenRouter API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const resultText = data.choices?.[0]?.message?.content || '';
 
   // Parse the JSON response
   try {
     // Clean up potential markdown code blocks
-    let jsonText = result.text.trim();
+    let jsonText = resultText.trim();
     if (jsonText.startsWith('```json')) {
       jsonText = jsonText.slice(7);
     }
@@ -80,7 +83,7 @@ Important:
     // Validate and normalize the structure
     return normalizeResume(parsed);
   } catch (error) {
-    console.error('Failed to parse LLM response:', result.text);
+    console.error('Failed to parse LLM response:', resultText);
     throw new Error('Failed to parse resume structure from LLM response');
   }
 }

@@ -1,25 +1,9 @@
 import { Router, Request, Response } from 'express';
-import { createOpenAI } from '@ai-sdk/openai';
-import { streamText } from 'ai';
 import { getSession, addSessionMessage, getSessionMessages, addSessionBullet } from '../services/session-store.js';
 import { createScoredBullet } from '../services/bullet-scorer.js';
 import { randomUUID } from 'crypto';
 
 const router = Router();
-
-// OpenRouter provider
-let openrouter: ReturnType<typeof createOpenAI> | null = null;
-
-function getProvider() {
-  if (!openrouter) {
-    openrouter = createOpenAI({
-      baseURL: 'https://openrouter.ai/api/v1',
-      apiKey: process.env.OPENROUTER_API_KEY || '',
-      compatibility: 'strict', // Force chat completions API
-    });
-  }
-  return openrouter;
-}
 
 router.post('/', async (req: Request, res: Response) => {
   try {
@@ -44,14 +28,12 @@ router.post('/', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    const provider = getProvider();
-    
     // Build system prompt with resume context
     let systemPrompt = `You are a helpful resume coach. Help the user update their resume by asking targeted questions about their work experience and accomplishments.`;
     
     if (session?.resume) {
       const resume = session.resume;
-      const userName = resume.contact.name?.split(' ')[0] || 'there'; // First name only
+      const userName = resume.contact.name?.split(' ')[0] || 'there';
       systemPrompt += `\n\nThe user's name is ${userName}. Address them by name occasionally to make the conversation more personal.`;
       systemPrompt += `\n\nTheir resume shows:\n`;
       systemPrompt += `Full name: ${resume.contact.name}\n`;
@@ -75,46 +57,119 @@ router.post('/', async (req: Request, res: Response) => {
       systemPrompt += `\n\n${methodologyGuides[method] || ''}`;
     }
     
-    // Add question guidance with recency weighting
-    systemPrompt += `\n\nQuestion Guidelines:
+    // Add question guidance
+    systemPrompt += `\n\nConversation Flow:
+1. ASK about an accomplishment or project
+2. ASK FOLLOW-UP QUESTIONS to get:
+   - Specific metrics (%, $, time saved, users impacted)
+   - Technologies/tools used
+   - Your specific role/contribution (especially for team projects)
+3. Once you have enough detail (metrics + action + result), EXTRACT THE BULLET
+4. After extracting a bullet, ASK: "What else did you accomplish at [company]?" or move to their next role
+
+Question Guidelines:
 - ASK ONLY ONE QUESTION AT A TIME. Never ask multiple questions in a single response.
 - Keep responses concise - acknowledge briefly, then ask your single follow-up question
 - Prioritize questions about the MOST RECENT role (highest weight)
 - Topics to explore (one at a time): projects, challenges overcome, team leadership, metrics/impact, innovations
-- Ask follow-up questions to get specific numbers and outcomes
-- When the user shares an accomplishment, extract it as a bullet point
+- A bullet is NOT ready until you have QUANTIFIABLE IMPACT (numbers, percentages, dollar amounts)
+- Keep asking until you get specific metrics - don't settle for vague answers
 - Don't repeat topics already covered in the conversation
-- Sample questions (pick ONE):
-  * "Tell me about a project you led at [company]. What was the outcome?"
-  * "What's the biggest challenge you faced as [title]? How did you solve it?"
-  * "Did you improve any processes or metrics? By how much?"
-  * "Did you mentor or lead anyone? What was the result?"
-  * "What would your manager say was your biggest contribution?"`;
+
+Sample questions (pick ONE per turn):
+- "Tell me about a project you're proud of at [company]. What was the outcome?"
+- "What's a challenge you faced as [title]? How did you solve it?"
+- "Did you improve any processes or metrics? By how much specifically?"
+- "How many people/users/customers were impacted?"
+- "What was the dollar value or time saved?"
+- "Did you mentor or lead anyone? What results did they achieve?"`;
     
     // Add extraction instruction
-    systemPrompt += `\n\nWhen the user describes an accomplishment, respond with your message AND include a JSON block at the end in this format:
+    systemPrompt += `\n\nBullet Extraction Rules:
+- ONLY extract a bullet when you have: specific action + quantifiable result
+- A strong bullet needs at least ONE metric (%, $, time, users, etc.)
+- After extracting a bullet, transition with: "Great! What else did you accomplish at [company]?" or "Let's talk about your time at [next company]."
+- Do NOT extract a new bullet if the user is just adding details to the previous accomplishment - instead, acknowledge the detail and ask what else they did.
+
+CRITICAL: When you show a bullet point to the user, you MUST ALSO include this JSON block at the END of your message (after your conversational text). This is required for the bullet to be saved.
+
+Example of a CORRECT response when extracting a bullet:
+---
+Great accomplishment! Here's how we can phrase that for your resume:
+
+"Reduced API response time by 60% and increased throughput by 3x by redesigning the microservices architecture using Kubernetes and Redis caching."
+
+What else did you accomplish at TechCorp?
+
 \`\`\`bullet
-{"company": "...", "title": "...", "text": "...", "isStrong": true/false}
+{"company": "TechCorp", "title": "Senior Software Engineer", "text": "Reduced API response time by 60% and increased throughput by 3x by redesigning the microservices architecture using Kubernetes and Redis caching.", "isStrong": true}
 \`\`\`
-Only include the bullet block when you've extracted a clear accomplishment.`;
+---
+
+The JSON block MUST be included at the end. Without it, the bullet won't be saved to the sidebar.`;
     
-    // Build messages array with history
+    // Build messages array
     const messages = [
-      ...previousMessages.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
-      { role: 'user' as const, content: message }
+      { role: 'system', content: systemPrompt },
+      ...previousMessages.map(m => ({ role: m.role, content: m.content })),
+      { role: 'user', content: message }
     ];
     
-    const result = streamText({
-      model: provider('openai/gpt-4-turbo'),
-      system: systemPrompt,
-      messages,
+    // Direct fetch to OpenRouter with streaming
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'openai/gpt-4-turbo',
+        messages,
+        stream: true,
+      }),
     });
 
-    // Stream the response and capture full text
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('OpenRouter error:', error);
+      res.write(`data: ${JSON.stringify({ type: 'error', error: 'API error' })}\n\n`);
+      res.end();
+      return;
+    }
+
+    // Stream the response
     let fullResponse = '';
-    for await (const chunk of result.textStream) {
-      fullResponse += chunk;
-      res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`);
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+
+    if (!reader) {
+      res.write(`data: ${JSON.stringify({ type: 'error', error: 'No response body' })}\n\n`);
+      res.end();
+      return;
+    }
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n').filter(line => line.trim().startsWith('data:'));
+
+      for (const line of lines) {
+        const data = line.replace(/^data:\s*/, '').trim();
+        if (data === '[DONE]') continue;
+        
+        try {
+          const parsed = JSON.parse(data);
+          const content = parsed.choices?.[0]?.delta?.content;
+          if (content) {
+            fullResponse += content;
+            res.write(`data: ${JSON.stringify({ type: 'chunk', content })}\n\n`);
+          }
+        } catch (e) {
+          // Skip unparseable chunks
+        }
+      }
     }
     
     // Extract any bullets from the response
@@ -124,7 +179,6 @@ Only include the bullet block when you've extracted a clear accomplishment.`;
     if (bulletMatch && sessionId) {
       try {
         const bulletData = JSON.parse(bulletMatch[1]);
-        // Use scorer for proper strength evaluation
         extractedBullet = createScoredBullet(
           bulletData.company || '',
           bulletData.title || '',
@@ -137,7 +191,7 @@ Only include the bullet block when you've extracted a clear accomplishment.`;
       }
     }
     
-    // Store assistant message (without the bullet block for cleaner history)
+    // Store assistant message (without the bullet block)
     const cleanResponse = fullResponse.replace(/```bullet\n?[\s\S]*?\n?```/g, '').trim();
     if (sessionId && cleanResponse) {
       addSessionMessage(sessionId, 'assistant', cleanResponse);
@@ -149,7 +203,6 @@ Only include the bullet block when you've extracted a clear accomplishment.`;
   } catch (error) {
     console.error('Chat error:', error);
     
-    // If headers already sent, try to send error via SSE
     if (res.headersSent) {
       res.write(`data: ${JSON.stringify({ type: 'error', error: 'Stream error' })}\n\n`);
       res.end();
