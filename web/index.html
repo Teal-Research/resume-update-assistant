@@ -61,13 +61,33 @@
           <!-- OR divider -->
           <div class="flex items-center my-4">
             <div class="flex-1 border-t border-gray-600"></div>
+            <span class="px-4 text-gray-500 text-sm">or use LinkedIn</span>
+            <div class="flex-1 border-t border-gray-600"></div>
+          </div>
+          
+          <!-- LinkedIn URL -->
+          <div class="mb-4">
+            <label class="block text-sm text-gray-400 mb-2">LinkedIn profile URL <span class="text-gray-500">(public profiles only)</span></label>
+            <div class="flex gap-3">
+              <input type="url" id="linkedinUrl" placeholder="https://linkedin.com/in/yourprofile"
+                class="flex-1 bg-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder-gray-400">
+              <button id="linkedinBtn"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50">
+                Import
+              </button>
+            </div>
+          </div>
+
+          <!-- OR divider -->
+          <div class="flex items-center my-4">
+            <div class="flex-1 border-t border-gray-600"></div>
             <span class="px-4 text-gray-500 text-sm">or paste text</span>
             <div class="flex-1 border-t border-gray-600"></div>
           </div>
           
           <!-- Text paste -->
           <div>
-            <label class="block text-sm text-gray-400 mb-2">Paste resume/LinkedIn text</label>
+            <label class="block text-sm text-gray-400 mb-2">Paste resume text manually</label>
             <textarea id="resumeText" rows="4" placeholder="Paste your resume content here..."
               class="w-full bg-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder-gray-400 resize-none"></textarea>
             <button id="parseTextBtn"
@@ -75,8 +95,6 @@
               Parse Text
             </button>
           </div>
-          
-          <p class="text-xs text-gray-500 mt-3">💡 Tip: For LinkedIn, visit your profile, paste the text from the Experience section</p>
         </div>
 
         <!-- Methodology Selector (shown after timeline) -->

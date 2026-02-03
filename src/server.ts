@@ -7,6 +7,7 @@ import chatRouter from './routes/chat.js';
 import uploadRouter from './routes/upload.js';
 import parseTextRouter from './routes/parse-text.js';
 import bulletsRouter from './routes/bullets.js';
+import linkedinRouter from './routes/linkedin.js';
 
 dotenv.config();
 
@@ -26,6 +27,7 @@ app.use('/api/chat', chatRouter);
 app.use('/api/upload', uploadRouter);
 app.use('/api/parse-text', parseTextRouter);
 app.use('/api/bullets', bulletsRouter);
+app.use('/api/linkedin', linkedinRouter);
 
 // Health check
 app.get('/health', (req, res) => {

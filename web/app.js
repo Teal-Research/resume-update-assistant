@@ -11,6 +11,8 @@ const resumeFile = document.getElementById('resumeFile');
 const uploadBtn = document.getElementById('uploadBtn');
 const resumeText = document.getElementById('resumeText');
 const parseTextBtn = document.getElementById('parseTextBtn');
+const linkedinUrl = document.getElementById('linkedinUrl');
+const linkedinBtn = document.getElementById('linkedinBtn');
 const confirmTimelineBtn = document.getElementById('confirmTimelineBtn');
 const timelineEl = document.getElementById('timeline');
 
@@ -108,6 +110,43 @@ parseTextBtn.addEventListener('click', async () => {
     setStatus('Parse failed');
   } finally {
     parseTextBtn.disabled = false;
+  }
+});
+
+linkedinBtn.addEventListener('click', async () => {
+  const url = linkedinUrl.value.trim();
+  if (!url) {
+    alert('Please enter a LinkedIn profile URL');
+    return;
+  }
+
+  setStatus('Importing LinkedIn profile...');
+  linkedinBtn.disabled = true;
+
+  try {
+    const response = await fetch('/api/linkedin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url }),
+    });
+
+    const data = await response.json();
+    
+    if (data.success && data.resume) {
+      sessionId = data.sessionId;
+      parsedResume = data.resume;
+      showTimeline(data.resume, data.mostRecentRoleIndex);
+      setStatus(data.note || 'LinkedIn imported! Review your timeline.');
+    } else {
+      alert(data.error + (data.hint ? '\n\n' + data.hint : ''));
+      setStatus('LinkedIn import failed');
+    }
+  } catch (error) {
+    console.error('LinkedIn error:', error);
+    alert('Failed to import LinkedIn profile. Try pasting your profile text instead.');
+    setStatus('LinkedIn import failed');
+  } finally {
+    linkedinBtn.disabled = false;
   }
 });
 
