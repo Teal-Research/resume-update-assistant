@@ -1,7 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { createOpenAI } from '@ai-sdk/openai';
 import { streamText } from 'ai';
-import { getSession, addSessionMessage, getSessionMessages } from '../services/session-store.js';
+import { getSession, addSessionMessage, getSessionMessages, addSessionBullet } from '../services/session-store.js';
+import { randomUUID } from 'crypto';
 
 const router = Router();
 
@@ -78,6 +79,27 @@ router.post('/', async (req: Request, res: Response) => {
       systemPrompt += `\n\n${methodologyGuides[method] || ''}`;
     }
     
+    // Add question guidance with recency weighting
+    systemPrompt += `\n\nQuestion Guidelines:
+- Prioritize questions about the MOST RECENT role (highest weight)
+- For each role, ask about: projects, challenges overcome, team leadership, metrics/impact, innovations
+- Ask follow-up questions to get specific numbers and outcomes
+- When the user shares an accomplishment, extract it as a bullet point
+- Don't repeat topics already covered in the conversation
+- Sample questions:
+  * "Tell me about a project you led at [company]. What was the outcome?"
+  * "What's the biggest challenge you faced as [title]? How did you solve it?"
+  * "Did you improve any processes or metrics? By how much?"
+  * "Did you mentor or lead anyone? What was the result?"
+  * "What would your manager say was your biggest contribution?"`;
+    
+    // Add extraction instruction
+    systemPrompt += `\n\nWhen the user describes an accomplishment, respond with your message AND include a JSON block at the end in this format:
+\`\`\`bullet
+{"company": "...", "title": "...", "text": "...", "isStrong": true/false}
+\`\`\`
+Only include the bullet block when you've extracted a clear accomplishment.`;
+    
     // Build messages array with history
     const messages = [
       ...previousMessages.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
@@ -97,12 +119,34 @@ router.post('/', async (req: Request, res: Response) => {
       res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`);
     }
     
-    // Store assistant message
-    if (sessionId && fullResponse) {
-      addSessionMessage(sessionId, 'assistant', fullResponse);
+    // Extract any bullets from the response
+    const bulletMatch = fullResponse.match(/```bullet\n?([\s\S]*?)\n?```/);
+    let extractedBullet = null;
+    
+    if (bulletMatch && sessionId) {
+      try {
+        const bulletData = JSON.parse(bulletMatch[1]);
+        extractedBullet = {
+          id: randomUUID(),
+          company: bulletData.company || '',
+          title: bulletData.title || '',
+          text: bulletData.text || '',
+          isStrong: Boolean(bulletData.isStrong),
+          score: bulletData.isStrong ? 5 : 3,
+        };
+        addSessionBullet(sessionId, extractedBullet);
+      } catch (e) {
+        console.error('Failed to parse bullet:', e);
+      }
+    }
+    
+    // Store assistant message (without the bullet block for cleaner history)
+    const cleanResponse = fullResponse.replace(/```bullet\n?[\s\S]*?\n?```/g, '').trim();
+    if (sessionId && cleanResponse) {
+      addSessionMessage(sessionId, 'assistant', cleanResponse);
     }
 
-    res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
+    res.write(`data: ${JSON.stringify({ type: 'done', bullet: extractedBullet })}\n\n`);
     res.end();
 
   } catch (error) {
