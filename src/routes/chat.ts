@@ -108,7 +108,7 @@ Only include the bullet block when you've extracted a clear accomplishment.`;
     ];
     
     const result = streamText({
-      model: provider('anthropic/claude-3.5-sonnet'),
+      model: provider('anthropic/claude-sonnet-4.5'),
       system: systemPrompt,
       messages,
     });

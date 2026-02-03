@@ -17,10 +17,11 @@
   "author": "Teal Research",
   "license": "MIT",
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.35",
     "@ai-sdk/openai": "^3.0.25",
     "@types/multer": "^2.0.0",
     "@types/pdf-parse": "^1.1.5",
-    "ai": "^6.0.68",
+    "ai": "^6.0.69",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^4.21.0",

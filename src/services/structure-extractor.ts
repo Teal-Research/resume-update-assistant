@@ -26,7 +26,7 @@ export async function extractResumeStructure(rawText: string): Promise<ParsedRes
   const provider = getProvider();
   
   const result = await generateText({
-    model: provider('anthropic/claude-3.5-sonnet'),
+    model: provider('anthropic/claude-sonnet-4.5'),
     system: `You are a resume parser. Extract structured data from resume text and respond ONLY with valid JSON matching this schema:
 
 {

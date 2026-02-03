@@ -383,6 +383,7 @@ chatForm.addEventListener('submit', (e) => {
   const message = messageInput.value.trim();
   if (!message || isStreaming) return;
   messageInput.value = '';
+  messageInput.style.height = 'auto'; // Reset textarea height
   sendMessage(message);
 });
 
@@ -392,6 +393,20 @@ messageInput.addEventListener('keydown', (e) => {
     chatForm.dispatchEvent(new Event('submit'));
   }
 });
+
+// Auto-resize textarea as user types
+messageInput.addEventListener('input', () => {
+  messageInput.style.height = 'auto';
+  messageInput.style.height = Math.min(messageInput.scrollHeight, 150) + 'px';
+});
+
+// Reset height after sending
+const originalSendMessage = sendMessage;
+function sendMessageWrapper(message) {
+  originalSendMessage(message);
+  messageInput.style.height = 'auto';
+}
+// Note: sendMessage is called directly from form submit, so we reset in the submit handler
 
 // ============= Bullets Sidebar =============
 
