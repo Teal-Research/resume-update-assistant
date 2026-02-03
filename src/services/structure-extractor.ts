@@ -10,6 +10,7 @@ function getProvider() {
     openrouter = createOpenAI({
       baseURL: 'https://openrouter.ai/api/v1',
       apiKey: process.env.OPENROUTER_API_KEY || '',
+      compatibility: 'strict', // Force chat completions API
     });
   }
   return openrouter;
@@ -22,7 +23,7 @@ export async function extractResumeStructure(rawText: string): Promise<ParsedRes
   const provider = getProvider();
   
   const result = await generateText({
-    model: provider('openai/gpt-5.2'),
+    model: provider('openai/gpt-4-turbo'),
     system: `You are a resume parser. Extract structured data from resume text and respond ONLY with valid JSON matching this schema:
 
 {

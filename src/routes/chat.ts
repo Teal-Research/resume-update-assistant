@@ -15,6 +15,7 @@ function getProvider() {
     openrouter = createOpenAI({
       baseURL: 'https://openrouter.ai/api/v1',
       apiKey: process.env.OPENROUTER_API_KEY || '',
+      compatibility: 'strict', // Force chat completions API
     });
   }
   return openrouter;
@@ -50,8 +51,10 @@ router.post('/', async (req: Request, res: Response) => {
     
     if (session?.resume) {
       const resume = session.resume;
-      systemPrompt += `\n\nThe user's resume shows:\n`;
-      systemPrompt += `Name: ${resume.contact.name}\n`;
+      const userName = resume.contact.name?.split(' ')[0] || 'there'; // First name only
+      systemPrompt += `\n\nThe user's name is ${userName}. Address them by name occasionally to make the conversation more personal.`;
+      systemPrompt += `\n\nTheir resume shows:\n`;
+      systemPrompt += `Full name: ${resume.contact.name}\n`;
       if (resume.experience.length > 0) {
         systemPrompt += `\nExperience:\n`;
         resume.experience.forEach((exp, i) => {
@@ -102,7 +105,7 @@ Only include the bullet block when you've extracted a clear accomplishment.`;
     ];
     
     const result = streamText({
-      model: provider('openai/gpt-5.2'),
+      model: provider('openai/gpt-4-turbo'),
       system: systemPrompt,
       messages,
     });
