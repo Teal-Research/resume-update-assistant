@@ -353,24 +353,20 @@ async function sendMessage(message) {
             const data = JSON.parse(line.slice(6));
             if (data.type === 'chunk') {
               fullContent += data.content;
-              // Remove bullet and skills blocks from display
-              const displayContent = fullContent
-                .replace(/```bullet[\s\S]*?```/g, '')
-                .replace(/```skills[\s\S]*?```/g, '')
-                .trim();
-              assistantBubble.innerHTML = formatMessage(displayContent);
+              assistantBubble.innerHTML = formatMessage(fullContent);
               messagesEl.scrollTop = messagesEl.scrollHeight;
-            } else if (data.type === 'done') {
-              // Add extracted bullet to sidebar
+            } else if (data.type === 'bullet') {
+              // Bullet streamed from tool call
               if (data.bullet) {
                 addBullet(data.bullet);
               }
-              // Add extracted skills to sidebar
-              if (data.skills && data.skills.length > 0) {
-                for (const skill of data.skills) {
-                  addSkill(skill);
-                }
+            } else if (data.type === 'skill') {
+              // Skill streamed from tool call
+              if (data.skill) {
+                addSkill(data.skill);
               }
+            } else if (data.type === 'done') {
+              // Stream complete - counts available in data.bulletCount, data.skillCount
             } else if (data.type === 'error') {
               assistantBubble.innerHTML = `<span class="text-red-300">Error: ${data.error}</span>`;
             }
