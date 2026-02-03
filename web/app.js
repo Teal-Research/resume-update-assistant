@@ -26,8 +26,9 @@ const statusEl = document.getElementById('status');
 const bulletsList = document.getElementById('bulletsList');
 const exportBulletsBtn = document.getElementById('exportBulletsBtn');
 
-// Bullets state
+// Bullets and skills state
 let allBullets = [];
+let allSkills = [];
 
 // State
 let isStreaming = false;
@@ -352,13 +353,24 @@ async function sendMessage(message) {
             const data = JSON.parse(line.slice(6));
             if (data.type === 'chunk') {
               fullContent += data.content;
-              // Remove bullet blocks from display
-              const displayContent = fullContent.replace(/```bullet[\s\S]*?```/g, '').trim();
+              // Remove bullet and skills blocks from display
+              const displayContent = fullContent
+                .replace(/```bullet[\s\S]*?```/g, '')
+                .replace(/```skills[\s\S]*?```/g, '')
+                .trim();
               assistantBubble.innerHTML = formatMessage(displayContent);
               messagesEl.scrollTop = messagesEl.scrollHeight;
-            } else if (data.type === 'done' && data.bullet) {
+            } else if (data.type === 'done') {
               // Add extracted bullet to sidebar
-              addBullet(data.bullet);
+              if (data.bullet) {
+                addBullet(data.bullet);
+              }
+              // Add extracted skills to sidebar
+              if (data.skills && data.skills.length > 0) {
+                for (const skill of data.skills) {
+                  addSkill(skill);
+                }
+              }
             } else if (data.type === 'error') {
               assistantBubble.innerHTML = `<span class="text-red-300">Error: ${data.error}</span>`;
             }
@@ -413,6 +425,78 @@ function sendMessageWrapper(message) {
 function addBullet(bullet) {
   allBullets.push(bullet);
   renderBullets();
+}
+
+function addSkill(skill) {
+  // Avoid duplicates
+  if (!allSkills.some(s => s.name.toLowerCase() === skill.name.toLowerCase())) {
+    allSkills.push(skill);
+    renderSkills();
+  }
+}
+
+function renderSkills() {
+  const skillsSection = document.getElementById('skillsSection');
+  if (!skillsSection) return;
+  
+  if (allSkills.length === 0) {
+    skillsSection.classList.add('hidden');
+    return;
+  }
+  
+  skillsSection.classList.remove('hidden');
+  
+  // Group by category
+  const categories = {
+    technical: { label: '💻 Technical', skills: [] },
+    tool: { label: '🔧 Tools', skills: [] },
+    soft: { label: '🤝 Soft Skills', skills: [] },
+    methodology: { label: '📋 Methodology', skills: [] }
+  };
+  
+  for (const skill of allSkills) {
+    const cat = categories[skill.category] || categories.technical;
+    cat.skills.push(skill.name);
+  }
+  
+  let html = '<h3 class="text-white font-medium mb-2">🎯 Skills Identified</h3>';
+  
+  for (const [key, cat] of Object.entries(categories)) {
+    if (cat.skills.length > 0) {
+      html += `
+        <div class="mb-2">
+          <p class="text-xs text-gray-400 mb-1">${cat.label}</p>
+          <div class="flex flex-wrap gap-1">
+            ${cat.skills.map(s => `
+              <span class="bg-purple-600/30 text-purple-200 text-xs px-2 py-0.5 rounded cursor-pointer hover:bg-purple-600/50 skill-tag" data-skill="${s}">${s}</span>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+  }
+  
+  html += `<button id="copyAllSkills" class="mt-2 text-xs text-gray-400 hover:text-white">Copy all skills</button>`;
+  
+  skillsSection.innerHTML = html;
+  
+  // Add click handlers
+  document.querySelectorAll('.skill-tag').forEach(tag => {
+    tag.addEventListener('click', async () => {
+      const skill = tag.dataset.skill;
+      await navigator.clipboard.writeText(skill);
+      tag.classList.add('bg-green-600/30');
+      setTimeout(() => tag.classList.remove('bg-green-600/30'), 1000);
+    });
+  });
+  
+  document.getElementById('copyAllSkills')?.addEventListener('click', async () => {
+    const allSkillsText = allSkills.map(s => s.name).join(', ');
+    await navigator.clipboard.writeText(allSkillsText);
+    const btn = document.getElementById('copyAllSkills');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy all skills', 1500);
+  });
 }
 
 function renderBullets() {

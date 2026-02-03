@@ -36,10 +36,17 @@ export interface Bullet {
   score: number;
 }
 
+export interface Skill {
+  id: string;
+  name: string;
+  category: 'technical' | 'tool' | 'soft' | 'methodology';
+}
+
 export interface Session {
   id: string;
   resume?: ParsedResume;
   bullets: Bullet[];
+  skills: Skill[];
   methodology: 'STAR' | 'XYZ' | 'CAR' | 'Open';
   messages: Array<{ role: 'user' | 'assistant'; content: string }>;
   createdAt: Date;

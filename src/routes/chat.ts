@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { streamText } from 'ai';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import { getSession, addSessionMessage, getSessionMessages, addSessionBullet } from '../services/session-store.js';
+import { getSession, addSessionMessage, getSessionMessages, addSessionBullet, addSessionSkill } from '../services/session-store.js';
 import { createScoredBullet } from '../services/bullet-scorer.js';
 import { randomUUID } from 'crypto';
 
@@ -133,7 +133,21 @@ What else did you accomplish at TechCorp?
 \`\`\`
 ---
 
-The JSON block MUST be included at the end. Without it, the bullet won't be saved to the sidebar.`;
+The JSON block MUST be included at the end. Without it, the bullet won't be saved to the sidebar.
+
+SKILLS EXTRACTION:
+As you discuss accomplishments, identify skills the user demonstrates. Extract them using:
+\`\`\`skills
+[{"name": "Python", "category": "technical"}, {"name": "Leadership", "category": "soft"}]
+\`\`\`
+
+Categories:
+- "technical": Programming languages, frameworks (Python, React, SQL, etc.)
+- "tool": Software/platforms (AWS, Docker, Jira, Figma, etc.)
+- "soft": Interpersonal skills (Leadership, Communication, Mentoring, etc.)
+- "methodology": Processes/practices (Agile, Scrum, TDD, CI/CD, etc.)
+
+You can include skills in ANY response - not just when extracting bullets. Look for technologies, tools, and abilities mentioned in the conversation.`;
     
     // Build messages array for AI SDK
     const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [
@@ -178,13 +192,38 @@ The JSON block MUST be included at the end. Without it, the bullet won't be save
       }
     }
     
-    // Store assistant message (without the bullet block)
-    const cleanResponse = fullResponse.replace(/```bullet\n?[\s\S]*?\n?```/g, '').trim();
+    // Extract any skills from the response
+    const skillsMatch = fullResponse.match(/```skills\n?([\s\S]*?)\n?```/);
+    let extractedSkills: Array<{name: string, category: string}> = [];
+    
+    if (skillsMatch && sessionId) {
+      try {
+        const skillsData = JSON.parse(skillsMatch[1]);
+        if (Array.isArray(skillsData)) {
+          extractedSkills = skillsData;
+          for (const skill of skillsData) {
+            addSessionSkill(sessionId, {
+              id: randomUUID(),
+              name: skill.name,
+              category: skill.category || 'technical'
+            });
+          }
+        }
+      } catch (e) {
+        console.error('Failed to parse skills:', e);
+      }
+    }
+    
+    // Store assistant message (without the extraction blocks)
+    const cleanResponse = fullResponse
+      .replace(/```bullet\n?[\s\S]*?\n?```/g, '')
+      .replace(/```skills\n?[\s\S]*?\n?```/g, '')
+      .trim();
     if (sessionId && cleanResponse) {
       addSessionMessage(sessionId, 'assistant', cleanResponse);
     }
 
-    res.write(`data: ${JSON.stringify({ type: 'done', bullet: extractedBullet })}\n\n`);
+    res.write(`data: ${JSON.stringify({ type: 'done', bullet: extractedBullet, skills: extractedSkills })}\n\n`);
     res.end();
 
   } catch (error) {

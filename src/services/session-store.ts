@@ -1,4 +1,4 @@
-import type { ParsedResume, Bullet, Session } from '../types/index.js';
+import type { ParsedResume, Bullet, Skill, Session } from '../types/index.js';
 
 // In-memory session store
 const sessions = new Map<string, Session>();
@@ -15,6 +15,7 @@ export function createSession(id: string): Session {
     id,
     resume: undefined,
     bullets: [],
+    skills: [],
     methodology: 'Open',
     messages: [],
     createdAt: now,
@@ -107,6 +108,25 @@ export function addSessionBullet(id: string, bullet: Bullet): void {
 export function getSessionBullets(id: string): Bullet[] {
   const session = getSession(id);
   return session?.bullets || [];
+}
+
+/**
+ * Add a skill to the session (avoids duplicates by name)
+ */
+export function addSessionSkill(id: string, skill: Skill): void {
+  const session = getOrCreateSession(id);
+  // Avoid duplicates
+  if (!session.skills.some(s => s.name.toLowerCase() === skill.name.toLowerCase())) {
+    session.skills.push(skill);
+  }
+}
+
+/**
+ * Get all skills for a session
+ */
+export function getSessionSkills(id: string): Skill[] {
+  const session = getSession(id);
+  return session?.skills || [];
 }
 
 /**
