@@ -1,32 +1,11 @@
 import { Router, Request, Response } from 'express';
-import { createOpenAI } from '@ai-sdk/openai';
+import { anthropic } from '@ai-sdk/anthropic';
 import { streamText } from 'ai';
 import { getSession, addSessionMessage, getSessionMessages, addSessionBullet } from '../services/session-store.js';
 import { createScoredBullet } from '../services/bullet-scorer.js';
 import { randomUUID } from 'crypto';
 
 const router = Router();
-
-// Create provider on first request to ensure env vars are loaded
-let openrouter: ReturnType<typeof createOpenAI> | null = null;
-
-function getProvider() {
-  if (!openrouter) {
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    if (!apiKey) {
-      throw new Error('OPENROUTER_API_KEY is not set');
-    }
-    openrouter = createOpenAI({
-      baseURL: 'https://openrouter.ai/api/v1',
-      apiKey: apiKey,
-      headers: {
-        'HTTP-Referer': 'https://github.com/teal-research/resume-update-assistant',
-        'X-Title': 'Resume Update Assistant',
-      },
-    });
-  }
-  return openrouter;
-}
 
 router.post('/', async (req: Request, res: Response) => {
   try {
@@ -51,8 +30,6 @@ router.post('/', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    const provider = getProvider();
-    
     // Build system prompt with resume context
     let systemPrompt = `You are a helpful resume coach. Help the user update their resume by asking targeted questions about their work experience and accomplishments.`;
     
@@ -108,7 +85,7 @@ Only include the bullet block when you've extracted a clear accomplishment.`;
     ];
     
     const result = streamText({
-      model: provider('anthropic/claude-sonnet-4.5'),
+      model: anthropic('claude-sonnet-4-5-20250929'),
       system: systemPrompt,
       messages,
     });

@@ -1,32 +1,13 @@
-import { createOpenAI } from '@ai-sdk/openai';
+import { anthropic } from '@ai-sdk/anthropic';
 import { generateText } from 'ai';
 import type { ParsedResume, Experience, Education, Contact } from '../types/index.js';
-
-// Initialize OpenRouter
-let openrouter: ReturnType<typeof createOpenAI> | null = null;
-
-function getProvider() {
-  if (!openrouter) {
-    openrouter = createOpenAI({
-      baseURL: 'https://openrouter.ai/api/v1',
-      apiKey: process.env.OPENROUTER_API_KEY || '',
-      headers: {
-        'HTTP-Referer': 'https://github.com/teal-research/resume-update-assistant',
-        'X-Title': 'Resume Update Assistant',
-      },
-    });
-  }
-  return openrouter;
-}
 
 /**
  * Extract structured resume data from raw text using LLM
  */
 export async function extractResumeStructure(rawText: string): Promise<ParsedResume> {
-  const provider = getProvider();
-  
   const result = await generateText({
-    model: provider('anthropic/claude-sonnet-4.5'),
+    model: anthropic('claude-sonnet-4-5-20250929'),
     system: `You are a resume parser. Extract structured data from resume text and respond ONLY with valid JSON matching this schema:
 
 {
