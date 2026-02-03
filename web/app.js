@@ -383,6 +383,7 @@ async function sendMessage(message) {
     setStatus('Error occurred');
   } finally {
     setLoading(false);
+    messageInput.focus(); // Keep focus on input after response
   }
 }
 
