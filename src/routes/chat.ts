@@ -1,11 +1,24 @@
 import { Router, Request, Response } from 'express';
-import { anthropic } from '@ai-sdk/anthropic';
+import { createOpenAI } from '@ai-sdk/openai';
 import { streamText } from 'ai';
 import { getSession, addSessionMessage, getSessionMessages, addSessionBullet } from '../services/session-store.js';
 import { createScoredBullet } from '../services/bullet-scorer.js';
 import { randomUUID } from 'crypto';
 
 const router = Router();
+
+// OpenRouter provider
+let openrouter: ReturnType<typeof createOpenAI> | null = null;
+
+function getProvider() {
+  if (!openrouter) {
+    openrouter = createOpenAI({
+      baseURL: 'https://openrouter.ai/api/v1',
+      apiKey: process.env.OPENROUTER_API_KEY || '',
+    });
+  }
+  return openrouter;
+}
 
 router.post('/', async (req: Request, res: Response) => {
   try {
@@ -30,6 +43,8 @@ router.post('/', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
+    const provider = getProvider();
+    
     // Build system prompt with resume context
     let systemPrompt = `You are a helpful resume coach. Help the user update their resume by asking targeted questions about their work experience and accomplishments.`;
     
@@ -59,12 +74,14 @@ router.post('/', async (req: Request, res: Response) => {
     
     // Add question guidance with recency weighting
     systemPrompt += `\n\nQuestion Guidelines:
+- ASK ONLY ONE QUESTION AT A TIME. Never ask multiple questions in a single response.
+- Keep responses concise - acknowledge briefly, then ask your single follow-up question
 - Prioritize questions about the MOST RECENT role (highest weight)
-- For each role, ask about: projects, challenges overcome, team leadership, metrics/impact, innovations
+- Topics to explore (one at a time): projects, challenges overcome, team leadership, metrics/impact, innovations
 - Ask follow-up questions to get specific numbers and outcomes
 - When the user shares an accomplishment, extract it as a bullet point
 - Don't repeat topics already covered in the conversation
-- Sample questions:
+- Sample questions (pick ONE):
   * "Tell me about a project you led at [company]. What was the outcome?"
   * "What's the biggest challenge you faced as [title]? How did you solve it?"
   * "Did you improve any processes or metrics? By how much?"
@@ -85,7 +102,7 @@ Only include the bullet block when you've extracted a clear accomplishment.`;
     ];
     
     const result = streamText({
-      model: anthropic('claude-sonnet-4-5-20250929'),
+      model: provider('openai/gpt-5.2'),
       system: systemPrompt,
       messages,
     });
