@@ -3,6 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import { randomUUID } from 'crypto';
 import { extractTextFromPDF, looksLikeResume } from '../services/resume-parser.js';
+import { extractResumeStructure, identifyMostRecentRole } from '../services/structure-extractor.js';
 
 const router = Router();
 
@@ -46,6 +47,20 @@ router.post('/', upload.single('resume'), async (req: Request, res: Response) =>
     // Validate it looks like a resume
     const isResume = looksLikeResume(extracted.text);
     
+    // If it looks like a resume, extract structure with LLM
+    let resume = null;
+    let mostRecentRoleIndex = -1;
+    
+    if (isResume && extracted.text.length > 50) {
+      try {
+        resume = await extractResumeStructure(extracted.text);
+        mostRecentRoleIndex = identifyMostRecentRole(resume.experience);
+      } catch (error) {
+        console.error('Structure extraction error:', error);
+        // Continue without structured data
+      }
+    }
+    
     res.json({
       success: true,
       sessionId,
@@ -59,6 +74,8 @@ router.post('/', upload.single('resume'), async (req: Request, res: Response) =>
         charCount: extracted.text.length,
         isResume,
       },
+      resume,
+      mostRecentRoleIndex,
       warning: isResume ? undefined : 'This document may not be a resume. Please verify.',
     });
 

@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import chatRouter from './routes/chat.js';
 import uploadRouter from './routes/upload.js';
+import parseTextRouter from './routes/parse-text.js';
 
 dotenv.config();
 
@@ -22,6 +23,7 @@ app.use(express.static(path.join(__dirname, '../web')));
 // Routes
 app.use('/api/chat', chatRouter);
 app.use('/api/upload', uploadRouter);
+app.use('/api/parse-text', parseTextRouter);
 
 // Health check
 app.get('/health', (req, res) => {
