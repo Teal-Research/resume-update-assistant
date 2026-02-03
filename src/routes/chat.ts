@@ -160,7 +160,10 @@ Sample questions (ROTATE through different approaches):
   * The impact was clearly significant (shipped major feature, fixed critical bug)
   * User has tried to quantify but can't remember exact numbers
   * The accomplishment is impressive even without metrics (led team, learned new tech fast)
-- After extracting a bullet, transition with: "Great! What else did you accomplish at [company]?" or "Let's talk about your time at [next company]."
+- After extracting a bullet, DON'T just ask "What else did you accomplish?" - that's the blank page problem again!
+- Instead, SUGGEST 2-3 more likely accomplishments based on their role that you haven't discussed yet:
+  * "Great bullet! Given your role, you might have also: optimized database queries, set up monitoring, or mentored junior devs. Any of those ring a bell?"
+  * Use the resume context and conversation history to avoid repeating topics
 - Do NOT extract a new bullet if the user is just adding details to the previous accomplishment - instead, acknowledge the detail and ask what else they did.
 
 BULLET WRITING STYLE (CRITICAL - never copy user's words verbatim):
@@ -209,7 +212,7 @@ Great accomplishment! Here's how we can phrase that for your resume:
 
 "Reduced API response time by 60% and increased throughput by 3x by redesigning the microservices architecture using Kubernetes and Redis caching."
 
-What else did you accomplish at TechCorp?
+That's a solid win! As a Senior Engineer at TechCorp, you might have also tackled things like: setting up CI/CD pipelines, mentoring junior developers, or improving test coverage. Any of those ring a bell?
 
 \`\`\`bullet
 {"company": "TechCorp", "title": "Senior Software Engineer", "text": "Reduced API response time by 60% and increased throughput by 3x by redesigning the microservices architecture using Kubernetes and Redis caching.", "isStrong": true}
