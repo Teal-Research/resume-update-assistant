@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import multer from 'multer';
 import path from 'path';
 import { randomUUID } from 'crypto';
+import { extractTextFromPDF, looksLikeResume } from '../services/resume-parser.js';
 
 const router = Router();
 
@@ -39,14 +40,26 @@ router.post('/', upload.single('resume'), async (req: Request, res: Response) =>
 
     const sessionId = randomUUID();
     
+    // Extract text from PDF
+    const extracted = await extractTextFromPDF(req.file.path);
+    
+    // Validate it looks like a resume
+    const isResume = looksLikeResume(extracted.text);
+    
     res.json({
       success: true,
       sessionId,
       file: {
         originalName: req.file.originalname,
-        path: req.file.path,
         size: req.file.size,
+        numPages: extracted.numPages,
       },
+      extracted: {
+        text: extracted.text,
+        charCount: extracted.text.length,
+        isResume,
+      },
+      warning: isResume ? undefined : 'This document may not be a resume. Please verify.',
     });
 
   } catch (error) {
