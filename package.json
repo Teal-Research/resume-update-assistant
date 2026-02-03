@@ -1,0 +1,29 @@
+{
+  "name": "resume-update-assistant",
+  "version": "1.0.0",
+  "description": "AI-powered tool to help job seekers update their resumes",
+  "main": "src/server.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "build": "tsc"
+  },
+  "keywords": ["resume", "ai", "job-search"],
+  "author": "Teal Research",
+  "license": "MIT",
+  "dependencies": {
+    "@ai-sdk/openai": "^3.0.25",
+    "ai": "^6.0.68",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.19.7",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}
