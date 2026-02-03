@@ -28,7 +28,7 @@ function getProvider() {
 
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { message, sessionId } = req.body;
+    const { message, sessionId, methodology } = req.body;
 
     if (!message) {
       res.status(400).json({ error: 'Message is required' });
@@ -65,6 +65,17 @@ router.post('/', async (req: Request, res: Response) => {
         });
       }
       systemPrompt += `\nFocus on asking about their most recent role and uncovering quantifiable accomplishments they may have forgotten.`;
+    }
+    
+    // Add methodology guidance
+    const method = methodology || session?.methodology || 'Open';
+    if (method !== 'Open') {
+      const methodologyGuides: Record<string, string> = {
+        'STAR': 'Format accomplishments using STAR: Situation, Task, Action, Result. Ask follow-up questions to get all four components.',
+        'XYZ': 'Format accomplishments as: "Accomplished [X] as measured by [Y] by doing [Z]". Ask for metrics and specific actions.',
+        'CAR': 'Format accomplishments using CAR: Challenge, Action, Result. Focus on problems solved and outcomes.',
+      };
+      systemPrompt += `\n\n${methodologyGuides[method] || ''}`;
     }
     
     // Build messages array with history
