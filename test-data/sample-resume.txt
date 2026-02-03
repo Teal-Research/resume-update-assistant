@@ -1,0 +1,56 @@
+SARAH CHEN
+Senior Product Manager
+
+san.francisco@email.com | (415) 555-0123 | linkedin.com/in/sarahchen | San Francisco, CA
+
+SUMMARY
+Product leader with 8+ years of experience driving growth at B2B SaaS companies. Passionate about building products that solve real customer problems and leading cross-functional teams to deliver results.
+
+EXPERIENCE
+
+Senior Product Manager
+TechFlow Inc., San Francisco, CA
+March 2021 - October 2023
+
+- Led the redesign of the core analytics dashboard, resulting in a 45% increase in daily active users and reducing customer support tickets by 30%
+- Managed a $2.5M annual product budget and prioritized roadmap for a team of 12 engineers
+- Conducted 50+ customer interviews to identify pain points, leading to 3 new features that drove $1.2M in additional ARR
+- Worked with engineering to improve performance
+- Collaborated with marketing on product launches
+- Attended weekly stakeholder meetings
+
+Product Manager
+DataSync Solutions, Oakland, CA
+June 2018 - February 2021
+
+- Launched enterprise API product from 0 to 1, acquiring 45 customers and generating $800K ARR in first year
+- Reduced customer onboarding time from 14 days to 3 days by streamlining the integration process
+- Built and maintained product analytics dashboard using Amplitude
+- Helped with various projects as needed
+- Participated in agile ceremonies
+- Did competitive analysis
+
+Associate Product Manager
+StartupHub, Palo Alto, CA
+January 2016 - May 2018
+
+- Shipped mobile app v2.0 which increased app store rating from 3.2 to 4.6 stars
+- Responsible for managing backlog
+- Wrote product requirements documents
+- Supported senior PMs on strategic initiatives
+- Coordinated with QA team on testing
+
+EDUCATION
+
+MBA, Product Management Focus
+UC Berkeley Haas School of Business, 2015
+
+BS, Computer Science
+Stanford University, 2012
+
+SKILLS
+Product Strategy, Roadmap Planning, Agile/Scrum, SQL, Amplitude, Mixpanel, Figma, JIRA, A/B Testing, User Research
+
+CERTIFICATIONS
+- Pragmatic Marketing Certified (PMC-III)
+- Certified Scrum Product Owner (CSPO)
