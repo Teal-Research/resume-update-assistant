@@ -439,10 +439,18 @@ function renderBullets() {
         <p class="font-medium text-white text-sm">${group.company}</p>
         <p class="text-xs text-purple-300 mb-2">${group.title}</p>
         <ul class="space-y-2">
-          ${group.bullets.map(b => `
-            <li class="text-sm text-gray-200 flex items-start gap-2">
+          ${group.bullets.map((b, i) => `
+            <li class="text-sm text-gray-200 flex items-start gap-2 group">
               ${b.isStrong ? '<span class="text-green-400 font-bold" title="Strong bullet">↑</span>' : '<span class="w-3"></span>'}
-              <span>${b.text}</span>
+              <span class="flex-1">${b.text}</span>
+              <button 
+                class="copy-bullet-btn opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-white p-1" 
+                data-bullet-text="${b.text.replace(/"/g, '&quot;')}"
+                title="Copy bullet">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              </button>
             </li>
           `).join('')}
         </ul>
@@ -452,6 +460,27 @@ function renderBullets() {
 
   bulletsList.innerHTML = html;
   exportBulletsBtn.classList.remove('hidden');
+  
+  // Add click handlers for copy buttons
+  document.querySelectorAll('.copy-bullet-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const text = btn.dataset.bulletText;
+      try {
+        await navigator.clipboard.writeText(text);
+        // Show brief feedback
+        const originalTitle = btn.title;
+        btn.title = 'Copied!';
+        btn.classList.add('text-green-400');
+        setTimeout(() => {
+          btn.title = originalTitle;
+          btn.classList.remove('text-green-400');
+        }, 1500);
+      } catch (err) {
+        console.error('Failed to copy:', err);
+      }
+    });
+  });
 }
 
 // Export bullets
