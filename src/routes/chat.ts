@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { streamText } from 'ai';
-import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { createOpenAI } from '@ai-sdk/openai';
 import { getSession, addSessionMessage, getSessionMessages, addSessionBullet, addSessionSkill } from '../services/session-store.js';
 import { createScoredBullet } from '../services/bullet-scorer.js';
 import { addBulletTool, addSkillTool } from '../tools/resume-tools.js';
@@ -34,8 +34,7 @@ router.post('/', async (req: Request, res: Response) => {
     }
 
     // Configure OpenRouter as the provider (inside handler so env is loaded)
-    const openrouter = createOpenAICompatible({
-      name: 'openrouter',
+    const openrouter = createOpenAI({
       baseURL: 'https://openrouter.ai/api/v1',
       apiKey: process.env.OPENROUTER_API_KEY!,
     });
@@ -99,7 +98,7 @@ router.post('/', async (req: Request, res: Response) => {
     
     // Use AI SDK streamText with tools
     const result = streamText({
-      model: openrouter.chatModel('openai/gpt-4-turbo'),
+      model: openrouter.chat('openai/gpt-4-turbo'),
       system: systemPrompt,
       messages,
       tools: {
