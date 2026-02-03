@@ -3,6 +3,7 @@
 // DOM Elements
 const uploadSection = document.getElementById('uploadSection');
 const timelineSection = document.getElementById('timelineSection');
+const methodologySection = document.getElementById('methodologySection');
 const chatSection = document.getElementById('chatSection');
 const bulletsSidebar = document.getElementById('bulletsSidebar');
 
@@ -27,6 +28,7 @@ const exportBulletsBtn = document.getElementById('exportBulletsBtn');
 let isStreaming = false;
 let sessionId = null;
 let parsedResume = null;
+let selectedMethodology = 'Open';
 
 // ============= Upload & Parse =============
 
@@ -167,16 +169,32 @@ function showTimeline(resume, mostRecentIndex) {
 
 confirmTimelineBtn.addEventListener('click', () => {
   timelineSection.classList.add('hidden');
-  chatSection.classList.remove('hidden');
-  bulletsSidebar.classList.remove('hidden');
-  startChat();
+  methodologySection.classList.remove('hidden');
+  setStatus('Choose your preferred bullet format');
 });
 
 document.getElementById('wrongTimelineBtn').addEventListener('click', () => {
   timelineSection.classList.add('hidden');
-  chatSection.classList.remove('hidden');
-  bulletsSidebar.classList.remove('hidden');
-  startChatWithCorrection();
+  methodologySection.classList.remove('hidden');
+  // Mark that we need correction
+  parsedResume._needsCorrection = true;
+  setStatus('Choose your preferred bullet format');
+});
+
+// Methodology selection
+document.querySelectorAll('.methodology-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    selectedMethodology = btn.dataset.method;
+    methodologySection.classList.add('hidden');
+    chatSection.classList.remove('hidden');
+    bulletsSidebar.classList.remove('hidden');
+    
+    if (parsedResume?._needsCorrection) {
+      startChatWithCorrection();
+    } else {
+      startChat();
+    }
+  });
 });
 
 function startChatWithCorrection() {
@@ -250,7 +268,7 @@ async function sendMessage(message) {
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, sessionId }),
+      body: JSON.stringify({ message, sessionId, methodology: selectedMethodology }),
     });
 
     if (!response.ok) throw new Error('Failed to send message');

@@ -79,6 +79,30 @@
           <p class="text-xs text-gray-500 mt-3">💡 Tip: For LinkedIn, visit your profile, paste the text from the Experience section</p>
         </div>
 
+        <!-- Methodology Selector (shown after timeline) -->
+        <div id="methodologySection" class="hidden bg-gray-800 rounded-lg p-6 mb-4">
+          <h2 class="text-xl font-semibold text-purple-300 mb-4">Choose Bullet Format</h2>
+          <p class="text-gray-400 text-sm mb-4">Select how you'd like your accomplishments formatted:</p>
+          <div class="grid grid-cols-2 gap-3">
+            <button class="methodology-btn bg-gray-700 hover:bg-gray-600 p-4 rounded-lg text-left transition-colors" data-method="STAR">
+              <p class="font-medium text-white">STAR</p>
+              <p class="text-xs text-gray-400 mt-1">Situation, Task, Action, Result</p>
+            </button>
+            <button class="methodology-btn bg-gray-700 hover:bg-gray-600 p-4 rounded-lg text-left transition-colors" data-method="XYZ">
+              <p class="font-medium text-white">XYZ</p>
+              <p class="text-xs text-gray-400 mt-1">Accomplished X, measured by Y, doing Z</p>
+            </button>
+            <button class="methodology-btn bg-gray-700 hover:bg-gray-600 p-4 rounded-lg text-left transition-colors" data-method="CAR">
+              <p class="font-medium text-white">CAR</p>
+              <p class="text-xs text-gray-400 mt-1">Challenge, Action, Result</p>
+            </button>
+            <button class="methodology-btn bg-purple-600 hover:bg-purple-700 p-4 rounded-lg text-left transition-colors" data-method="Open">
+              <p class="font-medium text-white">Open Format</p>
+              <p class="text-xs text-purple-200 mt-1">No specific structure (default)</p>
+            </button>
+          </div>
+        </div>
+
         <!-- Parsed Resume Timeline (hidden initially) -->
         <div id="timelineSection" class="hidden bg-gray-800 rounded-lg p-6 mb-4">
           <div class="flex justify-between items-center mb-4">
