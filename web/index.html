@@ -10,6 +10,12 @@
       height: calc(100vh - 280px);
       min-height: 300px;
     }
+    @media (max-width: 1024px) {
+      .chat-container {
+        height: calc(100vh - 400px);
+        min-height: 250px;
+      }
+    }
     .message-assistant {
       background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
     }
@@ -28,6 +34,15 @@
     .timeline-card.current {
       border-left-color: #22c55e;
     }
+    /* Mobile touch targets */
+    @media (max-width: 640px) {
+      button, input, textarea {
+        min-height: 44px;
+      }
+      .methodology-btn {
+        padding: 1rem;
+      }
+    }
   </style>
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen">
@@ -38,9 +53,9 @@
       <p class="text-gray-400">Chat with AI to uncover accomplishments and update your resume</p>
     </div>
 
-    <div class="flex gap-6">
+    <div class="flex flex-col lg:flex-row gap-6">
       <!-- Main Chat Area -->
-      <div class="flex-1">
+      <div class="flex-1 min-w-0">
         <!-- Upload Section (shown initially) -->
         <div id="uploadSection" class="bg-gray-800 rounded-lg p-6 mb-4">
           <h2 class="text-xl font-semibold text-purple-300 mb-4">Get Started</h2>
@@ -101,7 +116,7 @@
         <div id="methodologySection" class="hidden bg-gray-800 rounded-lg p-6 mb-4">
           <h2 class="text-xl font-semibold text-purple-300 mb-4">Choose Bullet Format</h2>
           <p class="text-gray-400 text-sm mb-4">Select how you'd like your accomplishments formatted:</p>
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <button class="methodology-btn bg-gray-700 hover:bg-gray-600 p-4 rounded-lg text-left transition-colors" data-method="STAR">
               <p class="font-medium text-white">STAR</p>
               <p class="text-xs text-gray-400 mt-1">Situation, Task, Action, Result</p>
@@ -172,7 +187,7 @@
       </div>
 
       <!-- Sidebar - Bullets (hidden initially) -->
-      <div id="bulletsSidebar" class="hidden w-80 bg-gray-800 rounded-lg p-4 h-fit sticky top-4">
+      <div id="bulletsSidebar" class="hidden w-full lg:w-80 bg-gray-800 rounded-lg p-4 h-fit lg:sticky lg:top-4 order-last lg:order-none">
         <h2 class="text-lg font-semibold text-purple-300 mb-3">📋 Generated Bullets</h2>
         <div id="bulletsList" class="space-y-4">
           <p class="text-gray-500 text-sm">Bullets will appear here as you chat...</p>
