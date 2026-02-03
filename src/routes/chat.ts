@@ -177,19 +177,45 @@ router.post('/', async (req: Request, res: Response) => {
       }
     }
     
-    // If tools were called but no text response, generate one
+    // If tools were called but no text response, make a follow-up call to generate contextual response
     if (!fullResponse && (extractedBullets.length > 0 || extractedSkills.length > 0)) {
-      let generatedResponse = '';
-      
-      if (extractedBullets.length > 0) {
-        const bullet = extractedBullets[extractedBullets.length - 1];
-        generatedResponse = `Great! I've captured that accomplishment:\n\n"${bullet.text}"\n\n`;
-        generatedResponse += `What other wins did you have at ${bullet.company}? For example, did you mentor anyone, improve processes, or tackle any challenging technical problems?`;
-      }
-      
-      if (generatedResponse) {
-        fullResponse = generatedResponse;
-        res.write(`data: ${JSON.stringify({ type: 'chunk', content: generatedResponse })}\n\n`);
+      try {
+        // Build context about what was just extracted
+        const bulletsSummary = extractedBullets.map(b => `- "${b.text}" (${b.company})`).join('\n');
+        const skillsSummary = extractedSkills.map(s => s.name).join(', ');
+        
+        const followUpPrompt = `You just extracted the following bullet point(s) for the user's resume:
+${bulletsSummary}
+${skillsSummary ? `\nSkills noted: ${skillsSummary}` : ''}
+
+Now provide a brief, conversational response that:
+1. Acknowledges you captured the bullet (show it briefly)
+2. Based on their role and what you know, suggest 2-3 OTHER specific accomplishments they might have had (not generic "what else")
+3. Keep it concise - 2-3 sentences max
+
+Remember: Don't ask "what else did you accomplish?" - suggest specific things based on their role.`;
+
+        // Make follow-up call WITHOUT tools to get text response
+        const followUp = streamText({
+          model: openrouter.chat('openai/gpt-4-turbo'),
+          system: systemPrompt,
+          messages: [
+            ...messages,
+            { role: 'assistant', content: `[Called addBullet tool to save: "${extractedBullets[0]?.text || ''}"]` },
+            { role: 'user', content: followUpPrompt }
+          ],
+        });
+
+        for await (const chunk of followUp.textStream) {
+          fullResponse += chunk;
+          res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`);
+        }
+      } catch (followUpError) {
+        console.error('Follow-up generation error:', followUpError);
+        // Fallback to simple acknowledgment
+        const fallback = `Got it! I've added that bullet to your resume. What other accomplishments come to mind from this role?`;
+        fullResponse = fallback;
+        res.write(`data: ${JSON.stringify({ type: 'chunk', content: fallback })}\n\n`);
       }
     }
     
