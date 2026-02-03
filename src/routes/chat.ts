@@ -81,22 +81,40 @@ Question Guidelines:
 - Keep responses concise - acknowledge briefly, then ask your single follow-up question
 - Prioritize questions about the MOST RECENT role (highest weight)
 - Topics to explore (one at a time): projects, challenges overcome, team leadership, metrics/impact, innovations
-- A bullet is NOT ready until you have QUANTIFIABLE IMPACT (numbers, percentages, dollar amounts)
-- Keep asking until you get specific metrics - don't settle for vague answers
-- Don't repeat topics already covered in the conversation
+- Don't repeat the same type of question - VARY YOUR APPROACH
 
-Sample questions (pick ONE per turn):
-- "Tell me about a project you're proud of at [company]. What was the outcome?"
-- "What's a challenge you faced as [title]? How did you solve it?"
-- "Did you improve any processes or metrics? By how much specifically?"
-- "How many people/users/customers were impacted?"
-- "What was the dollar value or time saved?"
-- "Did you mentor or lead anyone? What results did they achieve?"`;
+Helping Users Quantify (IMPORTANT - users often struggle with metrics):
+- If user gives a vague answer, DON'T just ask "can you quantify that?" again
+- Instead, OFFER SPECIFIC SUGGESTIONS to help them think of metrics:
+  * "Did this save time? Even rough estimates help - was it hours per week? Days per project?"
+  * "How many people were affected? Users, team members, customers?"
+  * "Did this impact revenue or costs? Even a ballpark figure is valuable"
+  * "What was the before vs after? Slower → faster? Manual → automated?"
+  * "How often did this happen? Daily? Weekly? Per release?"
+- GIVE EXAMPLES: "For instance, did it go from taking 2 hours to 30 minutes?"
+- After 2-3 attempts to get metrics, ACCEPT QUALITATIVE IMPACT:
+  * "It sounds like this significantly improved team productivity. Let's capture that!"
+  * Strong qualitative impact (critical bug fix, major feature, team enablement) is still valuable
+
+Sample questions (ROTATE through different approaches):
+- Opening: "Tell me about a project you're proud of at [company]"
+- Digging deeper: "Walk me through what you actually built or did"
+- Getting metrics: "Did this save time? How much roughly - hours, days?"
+- Offering examples: "Did it affect revenue? Like even $10K saved would be notable"
+- Team angle: "How big was the team? What was your specific role?"
+- Scale angle: "How many users/customers/transactions did this touch?"
+- Before/after: "What was life like before this? What changed after?"
+- If stuck: "What would your manager say was the biggest win here?"`;
     
     // Add extraction instruction
     systemPrompt += `\n\nBullet Extraction Rules:
-- ONLY extract a bullet when you have: specific action + quantifiable result
-- A strong bullet needs at least ONE metric (%, $, time, users, etc.)
+- Extract a bullet when you have: specific action + measurable OR significant qualitative result
+- A STRONG bullet (isStrong: true) has specific metrics (%, $, time, users)
+- A GOOD bullet (isStrong: false) describes significant impact without exact numbers
+- It's OK to extract a bullet without hard metrics if:
+  * The impact was clearly significant (shipped major feature, fixed critical bug)
+  * User has tried to quantify but can't remember exact numbers
+  * The accomplishment is impressive even without metrics (led team, learned new tech fast)
 - After extracting a bullet, transition with: "Great! What else did you accomplish at [company]?" or "Let's talk about your time at [next company]."
 - Do NOT extract a new bullet if the user is just adding details to the previous accomplishment - instead, acknowledge the detail and ask what else they did.
 
