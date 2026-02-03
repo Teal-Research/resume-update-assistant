@@ -172,6 +172,21 @@ confirmTimelineBtn.addEventListener('click', () => {
   startChat();
 });
 
+document.getElementById('wrongTimelineBtn').addEventListener('click', () => {
+  timelineSection.classList.add('hidden');
+  chatSection.classList.remove('hidden');
+  bulletsSidebar.classList.remove('hidden');
+  startChatWithCorrection();
+});
+
+function startChatWithCorrection() {
+  const greeting = `I noticed the timeline might not be quite right. No worries! Let's start fresh.\n\n**What is your current or most recent job?** Please tell me:\n- Company name\n- Your job title\n- When you started (and ended, if applicable)`;
+  
+  addMessage(greeting, 'assistant');
+  setStatus('Ready to chat - tell me about your current role');
+  messageInput.focus();
+}
+
 // ============= Chat =============
 
 function startChat() {

@@ -83,10 +83,16 @@
         <div id="timelineSection" class="hidden bg-gray-800 rounded-lg p-6 mb-4">
           <div class="flex justify-between items-center mb-4">
             <h2 class="text-xl font-semibold text-purple-300">Your Experience Timeline</h2>
-            <button id="confirmTimelineBtn" 
-              class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-              ✓ Looks Correct - Start Chat
-            </button>
+            <div class="flex gap-2">
+              <button id="wrongTimelineBtn" 
+                class="bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                ✎ Something's Wrong
+              </button>
+              <button id="confirmTimelineBtn" 
+                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                ✓ Looks Correct - Start Chat
+              </button>
+            </div>
           </div>
           <div id="timeline" class="space-y-3"></div>
         </div>
