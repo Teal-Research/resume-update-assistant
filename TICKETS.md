@@ -1,38 +1,42 @@
 # Resume Update Assistant - Improvement Tickets
 
-## Ticket 1: Varied Questioning Approach for Metrics ✅
-**Priority:** High
-**Status:** DONE (commit bf2d06b)
-
-### Solution Implemented
-- AI now varies question types instead of repeating
-- Offers specific suggestions (time saved, users affected, revenue)
-- Gives concrete examples ("hours/week", "days/month")
-- Accepts qualitative impact after 2-3 attempts
-- Bullets without metrics marked as isStrong: false
+## Completed
+- ✅ Ticket 1: Varied Questioning (bf2d06b)
+- ✅ Ticket 2: Skills Extraction (67ddccb)
+- ✅ Ticket 3: Copy Button per Bullet (2c3851f)
 
 ---
 
-## Ticket 2: Skills Extraction Feature ✅
-**Priority:** Medium
-**Status:** DONE (commit 67ddccb)
+## Ticket 4: Proactive Accomplishment Suggestions
+**Priority:** High  
+**Status:** TODO
 
-### Solution Implemented
-- Skills extracted from conversation alongside bullets
-- Stored in session and displayed in sidebar
-- Categorized: Technical, Tools, Soft Skills, Methodology
-- Click individual skill to copy
-- "Copy all skills" button for bulk copy
-- Deduplication prevents repeats
+### Problem
+Just asking "what did you accomplish?" gives users the same blank-page problem.
+
+### Solution
+AI should suggest likely accomplishments based on job title/role context.
 
 ---
 
-## Ticket 3: Copy Button per Bullet ✅
+## Ticket 5: Smart Metric Suggestions  
 **Priority:** High
-**Status:** DONE (commit 2c3851f)
+**Status:** TODO
 
-### Solution Implemented
-- Copy icon appears on hover next to each bullet
-- Clicking copies bullet text to clipboard
-- Green highlight + tooltip feedback on copy
-- Export All button still available
+### Problem
+Users don't know WHAT to quantify.
+
+### Solution
+Suggest specific metrics based on accomplishment type (API = latency/RPS, process = hours saved).
+
+---
+
+## Ticket 6: Polish Bullets (Don't Use Input Literally)
+**Priority:** High
+**Status:** TODO
+
+### Problem
+"8 hours to 20 minutes" written verbatim is awkward.
+
+### Solution
+Rewrite into polished resume language with calculated percentages and strong verbs.
