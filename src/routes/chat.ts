@@ -155,9 +155,42 @@ router.post('/', async (req: Request, res: Response) => {
     // Stream the text response
     let fullResponse = '';
     
-    for await (const chunk of result.textStream) {
-      fullResponse += chunk;
-      res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`);
+    try {
+      for await (const chunk of result.textStream) {
+        fullResponse += chunk;
+        res.write(`data: ${JSON.stringify({ type: 'chunk', content: chunk })}\n\n`);
+      }
+    } catch (streamError) {
+      console.error('Stream error:', streamError);
+    }
+    
+    // Get final text if textStream was empty (can happen with tool-only responses)
+    if (!fullResponse) {
+      try {
+        const finalResult = await result.text;
+        if (finalResult) {
+          fullResponse = finalResult;
+          res.write(`data: ${JSON.stringify({ type: 'chunk', content: finalResult })}\n\n`);
+        }
+      } catch (e) {
+        // Ignore - just means no text was generated
+      }
+    }
+    
+    // If tools were called but no text response, generate one
+    if (!fullResponse && (extractedBullets.length > 0 || extractedSkills.length > 0)) {
+      let generatedResponse = '';
+      
+      if (extractedBullets.length > 0) {
+        const bullet = extractedBullets[extractedBullets.length - 1];
+        generatedResponse = `Great! I've captured that accomplishment:\n\n"${bullet.text}"\n\n`;
+        generatedResponse += `What other wins did you have at ${bullet.company}? For example, did you mentor anyone, improve processes, or tackle any challenging technical problems?`;
+      }
+      
+      if (generatedResponse) {
+        fullResponse = generatedResponse;
+        res.write(`data: ${JSON.stringify({ type: 'chunk', content: generatedResponse })}\n\n`);
+      }
     }
     
     // Store assistant message
