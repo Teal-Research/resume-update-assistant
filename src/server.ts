@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import chatRouter from './routes/chat.js';
+import uploadRouter from './routes/upload.js';
 
 dotenv.config();
 
@@ -20,6 +21,7 @@ app.use(express.static(path.join(__dirname, '../web')));
 
 // Routes
 app.use('/api/chat', chatRouter);
+app.use('/api/upload', uploadRouter);
 
 // Health check
 app.get('/health', (req, res) => {
