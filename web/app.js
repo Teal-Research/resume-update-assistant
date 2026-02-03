@@ -47,7 +47,7 @@ uploadBtn.addEventListener('click', async () => {
   const formData = new FormData();
   formData.append('resume', file);
 
-  setStatus('Uploading and parsing resume...');
+  setStatus('Uploading and parsing resume...', true);
   uploadBtn.disabled = true;
 
   try {
@@ -64,12 +64,12 @@ uploadBtn.addEventListener('click', async () => {
       showTimeline(data.resume, data.mostRecentRoleIndex);
       setStatus('Resume parsed! Review your timeline.');
     } else {
-      alert(data.warning || data.error || 'Failed to parse resume');
+      showError(data.warning || data.error || 'Failed to parse resume');
       setStatus('Upload failed');
     }
   } catch (error) {
     console.error('Upload error:', error);
-    alert('Failed to upload file');
+    showError('Failed to upload file. Please try again.');
     setStatus('Upload failed');
   } finally {
     uploadBtn.disabled = false;
@@ -83,7 +83,7 @@ parseTextBtn.addEventListener('click', async () => {
     return;
   }
 
-  setStatus('Parsing text...');
+  setStatus('Parsing text...', true);
   parseTextBtn.disabled = true;
 
   try {
@@ -101,12 +101,12 @@ parseTextBtn.addEventListener('click', async () => {
       showTimeline(data.resume, data.mostRecentRoleIndex);
       setStatus('Text parsed! Review your timeline.');
     } else {
-      alert(data.error || 'Failed to parse text');
+      showError(data.error || 'Failed to parse text');
       setStatus('Parse failed');
     }
   } catch (error) {
     console.error('Parse error:', error);
-    alert('Failed to parse text');
+    showError('Failed to parse text. Please try again.');
     setStatus('Parse failed');
   } finally {
     parseTextBtn.disabled = false;
@@ -120,7 +120,7 @@ linkedinBtn.addEventListener('click', async () => {
     return;
   }
 
-  setStatus('Importing LinkedIn profile...');
+  setStatus('Importing LinkedIn profile...', true);
   linkedinBtn.disabled = true;
 
   try {
@@ -138,12 +138,12 @@ linkedinBtn.addEventListener('click', async () => {
       showTimeline(data.resume, data.mostRecentRoleIndex);
       setStatus(data.note || 'LinkedIn imported! Review your timeline.');
     } else {
-      alert(data.error + (data.hint ? '\n\n' + data.hint : ''));
+      showError(data.error + (data.hint ? ' ' + data.hint : ''));
       setStatus('LinkedIn import failed');
     }
   } catch (error) {
     console.error('LinkedIn error:', error);
-    alert('Failed to import LinkedIn profile. Try pasting your profile text instead.');
+    showError('Failed to import LinkedIn profile. Try pasting your profile text instead.');
     setStatus('LinkedIn import failed');
   } finally {
     linkedinBtn.disabled = false;
@@ -296,8 +296,25 @@ function setLoading(loading) {
   messageInput.disabled = loading;
 }
 
-function setStatus(text) {
+function setStatus(text, isLoading = false) {
   statusEl.textContent = text;
+  const spinner = document.getElementById('loadingSpinner');
+  spinner.classList.toggle('hidden', !isLoading);
+}
+
+function showError(message) {
+  const toast = document.getElementById('errorToast');
+  const errorMsg = document.getElementById('errorMessage');
+  errorMsg.textContent = message;
+  toast.classList.remove('hidden');
+  
+  // Auto-hide after 5 seconds
+  setTimeout(() => hideError(), 5000);
+}
+
+function hideError() {
+  const toast = document.getElementById('errorToast');
+  toast.classList.add('hidden');
 }
 
 async function sendMessage(message) {
