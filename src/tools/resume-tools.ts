@@ -44,6 +44,31 @@ EXAMPLES:
 });
 
 /**
+ * Tool for updating an existing bullet point
+ * The AI calls this when the user wants to improve or modify an existing bullet
+ */
+export const updateBulletTool = tool({
+  description: `Update an existing bullet point in the user's resume. Call this when:
+- The user wants to improve a bullet (imported or generated)
+- You've gathered additional details that make a bullet stronger
+- The user asks to rephrase or add metrics to an existing bullet
+
+Find the bullet by matching text (partial match is fine) and provide the improved version.`,
+  inputSchema: z.object({
+    company: z.string().describe('Company name to help identify the bullet'),
+    searchText: z.string().describe('Part of the existing bullet text to find (fuzzy match)'),
+    newText: z.string().describe('The improved, polished bullet point text'),
+  }),
+  execute: async ({ company, searchText, newText }) => {
+    return {
+      success: true,
+      update: { company, searchText, newText },
+      message: `Bullet updated at ${company}`,
+    };
+  },
+});
+
+/**
  * Tool for extracting skills from the conversation
  */
 export const addSkillTool = tool({

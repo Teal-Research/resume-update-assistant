@@ -43,6 +43,15 @@
         padding: 1rem;
       }
     }
+    /* Mic button recording state */
+    .mic-recording {
+      background: #dc2626 !important;
+      animation: pulse-mic 1.5s infinite;
+    }
+    @keyframes pulse-mic {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
   </style>
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen">
@@ -182,11 +191,17 @@
               <textarea id="messageInput" placeholder="Tell me about your accomplishments... (Shift+Enter for new line)"
                 class="flex-1 bg-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder-gray-400 resize-none"
                 rows="1" autocomplete="off"></textarea>
+              <button type="button" id="micBtn"
+                class="bg-gray-600 hover:bg-gray-500 text-white px-4 py-3 rounded-lg font-medium transition-colors disabled:opacity-50"
+                title="Click to speak">
+                🎤
+              </button>
               <button type="submit" id="sendBtn"
                 class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                 Send
               </button>
             </form>
+            <p id="micStatus" class="hidden text-xs text-purple-300 mt-2 text-center"></p>
           </div>
         </div>
       </div>

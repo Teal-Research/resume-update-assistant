@@ -14,7 +14,7 @@ router.get('/:sessionId', (req: Request, res: Response) => {
     return;
   }
   
-  const bullets = getSessionBullets(sessionId);
+  const bullets = getSessionBullets(sessionId as string);
   
   // Group bullets by company/title
   const grouped: Record<string, { company: string; title: string; bullets: typeof bullets }> = {};

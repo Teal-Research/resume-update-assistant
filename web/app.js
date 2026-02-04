@@ -28,6 +28,121 @@ const exportBulletsBtn = document.getElementById('exportBulletsBtn');
 const downloadBulletsBtn = document.getElementById('downloadBulletsBtn');
 const exportButtons = document.getElementById('exportButtons');
 const startOverBtn = document.getElementById('startOverBtn');
+const micBtn = document.getElementById('micBtn');
+const micStatus = document.getElementById('micStatus');
+
+// ============= Speech Recognition =============
+
+let recognition = null;
+let isRecording = false;
+
+function initSpeechRecognition() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  
+  if (!SpeechRecognition) {
+    micBtn.disabled = true;
+    micBtn.title = 'Speech recognition not supported in this browser';
+    micBtn.classList.add('opacity-50');
+    return;
+  }
+  
+  recognition = new SpeechRecognition();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+  
+  recognition.onstart = () => {
+    isRecording = true;
+    micBtn.classList.add('mic-recording');
+    micBtn.textContent = '🔴';
+    micStatus.textContent = 'Listening... speak now';
+    micStatus.classList.remove('hidden');
+  };
+  
+  recognition.onresult = (event) => {
+    let interimTranscript = '';
+    let finalTranscript = '';
+    
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const transcript = event.results[i][0].transcript;
+      if (event.results[i].isFinal) {
+        finalTranscript += transcript;
+      } else {
+        interimTranscript += transcript;
+      }
+    }
+    
+    // Add final transcript to input
+    if (finalTranscript) {
+      messageInput.value += (messageInput.value ? ' ' : '') + finalTranscript;
+      messageInput.dispatchEvent(new Event('input')); // Trigger auto-resize
+    }
+    
+    // Show interim in status
+    if (interimTranscript) {
+      micStatus.textContent = `"${interimTranscript}"`;
+    }
+  };
+  
+  recognition.onerror = (event) => {
+    console.error('Speech recognition error:', event.error);
+    stopRecording();
+    if (event.error === 'not-allowed') {
+      micStatus.textContent = 'Microphone access denied';
+    } else {
+      micStatus.textContent = `Error: ${event.error}`;
+    }
+    setTimeout(() => micStatus.classList.add('hidden'), 3000);
+  };
+  
+  recognition.onend = () => {
+    if (isRecording) {
+      // Restart if still supposed to be recording (handles auto-stop)
+      try {
+        recognition.start();
+      } catch (e) {
+        stopRecording();
+      }
+    }
+  };
+}
+
+function startRecording() {
+  if (!recognition) return;
+  try {
+    recognition.start();
+  } catch (e) {
+    console.error('Failed to start recording:', e);
+  }
+}
+
+function stopRecording() {
+  isRecording = false;
+  micBtn.classList.remove('mic-recording');
+  micBtn.textContent = '🎤';
+  micStatus.textContent = 'Click mic to speak again';
+  setTimeout(() => micStatus.classList.add('hidden'), 2000);
+  if (recognition) {
+    try {
+      recognition.stop();
+    } catch (e) {
+      // Ignore
+    }
+  }
+}
+
+function toggleRecording() {
+  if (isRecording) {
+    stopRecording();
+  } else {
+    startRecording();
+  }
+}
+
+// Initialize speech recognition on load
+initSpeechRecognition();
+
+micBtn.addEventListener('click', toggleRecording);
 
 // Bullets and skills state
 let allBullets = [];
@@ -421,6 +536,9 @@ async function sendMessage(message) {
               if (data.skill) {
                 addSkill(data.skill);
               }
+            } else if (data.type === 'bulletUpdate') {
+              // Update existing bullet
+              updateBullet(data.company, data.searchText, data.newText);
             } else if (data.type === 'done') {
               // Stream complete - counts available in data.bulletCount, data.skillCount
             } else if (data.type === 'error') {
@@ -439,7 +557,10 @@ async function sendMessage(message) {
     setStatus('Error occurred');
   } finally {
     setLoading(false);
-    messageInput.focus(); // Keep focus on input after response
+    // Ensure focus after all DOM updates complete
+    requestAnimationFrame(() => {
+      messageInput.focus();
+    });
   }
 }
 
@@ -524,6 +645,29 @@ function deleteBullet(bulletText) {
   if (index !== -1) {
     allBullets.splice(index, 1);
     renderBullets();
+  }
+}
+
+function updateBullet(company, searchText, newText) {
+  // Find bullet by company and partial text match
+  const searchLower = searchText.toLowerCase();
+  const index = allBullets.findIndex(b => 
+    b.company.toLowerCase() === company.toLowerCase() &&
+    b.text.toLowerCase().includes(searchLower)
+  );
+  
+  if (index !== -1) {
+    allBullets[index].text = newText;
+    renderBullets();
+  } else {
+    // Try fuzzy match just on text if company match fails
+    const textOnlyIndex = allBullets.findIndex(b => 
+      b.text.toLowerCase().includes(searchLower)
+    );
+    if (textOnlyIndex !== -1) {
+      allBullets[textOnlyIndex].text = newText;
+      renderBullets();
+    }
   }
 }
 

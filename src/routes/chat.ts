@@ -3,7 +3,7 @@ import { streamText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { getSession, addSessionMessage, getSessionMessages, addSessionBullet, addSessionSkill } from '../services/session-store.js';
 import { createScoredBullet } from '../services/bullet-scorer.js';
-import { addBulletTool, addSkillTool } from '../tools/resume-tools.js';
+import { addBulletTool, addSkillTool, updateBulletTool } from '../tools/resume-tools.js';
 import { randomUUID } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -104,8 +104,8 @@ router.post('/', async (req: Request, res: Response) => {
       tools: {
         addBullet: addBulletTool,
         addSkill: addSkillTool,
+        updateBullet: updateBulletTool,
       },
-      maxSteps: 5, // Allow multiple tool calls per turn
       onStepFinish: async ({ toolResults }) => {
         // Process tool results
         if (toolResults && toolResults.length > 0) {
@@ -146,6 +146,16 @@ router.post('/', async (req: Request, res: Response) => {
                 // Stream skill to frontend immediately
                 res.write(`data: ${JSON.stringify({ type: 'skill', skill })}\n\n`);
               }
+            } else if (toolResult.toolName === 'updateBullet' && output?.update) {
+              const updateData = output.update;
+              
+              // Stream update to frontend - it will handle finding and updating the bullet
+              res.write(`data: ${JSON.stringify({ 
+                type: 'bulletUpdate', 
+                company: updateData.company,
+                searchText: updateData.searchText,
+                newText: updateData.newText 
+              })}\n\n`);
             }
           }
         }
