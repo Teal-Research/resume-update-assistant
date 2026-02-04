@@ -29,6 +29,7 @@ const exportBulletsBtn = document.getElementById('exportBulletsBtn');
 // Bullets and skills state
 let allBullets = [];
 let allSkills = [];
+let pendingBullet = null; // Bullet being worked on, not yet confirmed
 
 // State
 let isStreaming = false;
@@ -435,7 +436,26 @@ function sendMessageWrapper(message) {
 // ============= Bullets Sidebar =============
 
 function addBullet(bullet) {
-  allBullets.push(bullet);
+  // If it's an imported bullet, add directly
+  if (bullet.isImported) {
+    allBullets.push(bullet);
+  } else {
+    // AI-extracted bullets go to pending first
+    pendingBullet = bullet;
+  }
+  renderBullets();
+}
+
+function confirmPendingBullet() {
+  if (pendingBullet) {
+    allBullets.push(pendingBullet);
+    pendingBullet = null;
+    renderBullets();
+  }
+}
+
+function discardPendingBullet() {
+  pendingBullet = null;
   renderBullets();
 }
 
@@ -512,7 +532,27 @@ function renderSkills() {
 }
 
 function renderBullets() {
-  if (allBullets.length === 0) {
+  let html = '';
+  
+  // Show pending bullet at top if exists
+  if (pendingBullet) {
+    html += `
+      <div class="bg-purple-900/50 border-2 border-purple-500 rounded-lg p-3 mb-3">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs text-purple-300 font-medium">✏️ Working Bullet</span>
+          <div class="flex gap-1">
+            <button id="discardPendingBtn" class="text-xs px-2 py-1 rounded bg-gray-600 hover:bg-gray-500 text-gray-300" title="Discard">✕</button>
+            <button id="confirmPendingBtn" class="text-xs px-2 py-1 rounded bg-green-600 hover:bg-green-500 text-white" title="Save bullet">✓ Save</button>
+          </div>
+        </div>
+        <p class="font-medium text-white text-sm">${pendingBullet.company}</p>
+        <p class="text-xs text-purple-300 mb-2">${pendingBullet.title}</p>
+        <p class="text-sm text-gray-200">${pendingBullet.text}</p>
+      </div>
+    `;
+  }
+  
+  if (allBullets.length === 0 && !pendingBullet) {
     bulletsList.innerHTML = '<p class="text-gray-500 text-sm">Bullets will appear here as you chat...</p>';
     exportBulletsBtn.classList.add('hidden');
     return;
@@ -528,7 +568,6 @@ function renderBullets() {
     groups[key].bullets.push(bullet);
   }
 
-  let html = '';
   for (const group of Object.values(groups)) {
     html += `
       <div class="bg-gray-700 rounded-lg p-3">
@@ -555,7 +594,13 @@ function renderBullets() {
   }
 
   bulletsList.innerHTML = html;
-  exportBulletsBtn.classList.remove('hidden');
+  if (allBullets.length > 0) {
+    exportBulletsBtn.classList.remove('hidden');
+  }
+  
+  // Add click handlers for pending bullet buttons
+  document.getElementById('confirmPendingBtn')?.addEventListener('click', confirmPendingBullet);
+  document.getElementById('discardPendingBtn')?.addEventListener('click', discardPendingBullet);
   
   // Add click handlers for copy buttons
   document.querySelectorAll('.copy-bullet-btn').forEach(btn => {
