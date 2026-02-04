@@ -459,6 +459,26 @@ function discardPendingBullet() {
   renderBullets();
 }
 
+let isEditingPending = false;
+
+function editPendingBullet() {
+  isEditingPending = true;
+  renderBullets();
+}
+
+function savePendingEdit(newText) {
+  if (pendingBullet && newText.trim()) {
+    pendingBullet.text = newText.trim();
+  }
+  isEditingPending = false;
+  renderBullets();
+}
+
+function cancelPendingEdit() {
+  isEditingPending = false;
+  renderBullets();
+}
+
 function addSkill(skill) {
   // Avoid duplicates
   if (!allSkills.some(s => s.name.toLowerCase() === skill.name.toLowerCase())) {
@@ -536,20 +556,40 @@ function renderBullets() {
   
   // Show pending bullet at top if exists
   if (pendingBullet) {
-    html += `
-      <div class="bg-purple-900/50 border-2 border-purple-500 rounded-lg p-3 mb-3">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-xs text-purple-300 font-medium">✏️ Working Bullet</span>
-          <div class="flex gap-1">
-            <button id="discardPendingBtn" class="text-xs px-2 py-1 rounded bg-gray-600 hover:bg-gray-500 text-gray-300" title="Discard">✕</button>
-            <button id="confirmPendingBtn" class="text-xs px-2 py-1 rounded bg-green-600 hover:bg-green-500 text-white" title="Save bullet">✓ Save</button>
+    if (isEditingPending) {
+      // Edit mode
+      html += `
+        <div class="bg-purple-900/50 border-2 border-purple-500 rounded-lg p-3 mb-3">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs text-purple-300 font-medium">✏️ Editing Bullet</span>
+            <div class="flex gap-1">
+              <button id="cancelEditBtn" class="text-xs px-2 py-1 rounded bg-gray-600 hover:bg-gray-500 text-gray-300" title="Cancel edit">Cancel</button>
+              <button id="saveEditBtn" class="text-xs px-2 py-1 rounded bg-green-600 hover:bg-green-500 text-white" title="Save changes">✓ Done</button>
+            </div>
           </div>
+          <p class="font-medium text-white text-sm">${pendingBullet.company}</p>
+          <p class="text-xs text-purple-300 mb-2">${pendingBullet.title}</p>
+          <textarea id="editBulletText" class="w-full bg-gray-800 text-gray-200 text-sm p-2 rounded border border-purple-400 focus:outline-none focus:border-purple-300 resize-none" rows="3">${pendingBullet.text}</textarea>
         </div>
-        <p class="font-medium text-white text-sm">${pendingBullet.company}</p>
-        <p class="text-xs text-purple-300 mb-2">${pendingBullet.title}</p>
-        <p class="text-sm text-gray-200">${pendingBullet.text}</p>
-      </div>
-    `;
+      `;
+    } else {
+      // View mode
+      html += `
+        <div class="bg-purple-900/50 border-2 border-purple-500 rounded-lg p-3 mb-3">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs text-purple-300 font-medium">✏️ Working Bullet</span>
+            <div class="flex gap-1">
+              <button id="discardPendingBtn" class="text-xs px-2 py-1 rounded bg-gray-600 hover:bg-gray-500 text-gray-300" title="Discard">✕</button>
+              <button id="editPendingBtn" class="text-xs px-2 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white" title="Edit bullet">✎ Edit</button>
+              <button id="confirmPendingBtn" class="text-xs px-2 py-1 rounded bg-green-600 hover:bg-green-500 text-white" title="Save bullet">✓ Save</button>
+            </div>
+          </div>
+          <p class="font-medium text-white text-sm">${pendingBullet.company}</p>
+          <p class="text-xs text-purple-300 mb-2">${pendingBullet.title}</p>
+          <p class="text-sm text-gray-200">${pendingBullet.text}</p>
+        </div>
+      `;
+    }
   }
   
   if (allBullets.length === 0 && !pendingBullet) {
@@ -601,6 +641,23 @@ function renderBullets() {
   // Add click handlers for pending bullet buttons
   document.getElementById('confirmPendingBtn')?.addEventListener('click', confirmPendingBullet);
   document.getElementById('discardPendingBtn')?.addEventListener('click', discardPendingBullet);
+  document.getElementById('editPendingBtn')?.addEventListener('click', editPendingBullet);
+  document.getElementById('cancelEditBtn')?.addEventListener('click', cancelPendingEdit);
+  document.getElementById('saveEditBtn')?.addEventListener('click', () => {
+    const textarea = document.getElementById('editBulletText');
+    if (textarea) {
+      savePendingEdit(textarea.value);
+    }
+  });
+  
+  // Focus the edit textarea if in edit mode
+  if (isEditingPending) {
+    const textarea = document.getElementById('editBulletText');
+    if (textarea) {
+      textarea.focus();
+      textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    }
+  }
   
   // Add click handlers for copy buttons
   document.querySelectorAll('.copy-bullet-btn').forEach(btn => {
