@@ -479,6 +479,14 @@ function cancelPendingEdit() {
   renderBullets();
 }
 
+function deleteBullet(bulletText) {
+  const index = allBullets.findIndex(b => b.text === bulletText);
+  if (index !== -1) {
+    allBullets.splice(index, 1);
+    renderBullets();
+  }
+}
+
 function addSkill(skill) {
   // Avoid duplicates
   if (!allSkills.some(s => s.name.toLowerCase() === skill.name.toLowerCase())) {
@@ -618,14 +626,24 @@ function renderBullets() {
             <li class="text-sm text-gray-200 flex items-start gap-2 group">
               <span class="shrink-0" title="${b.isImported ? 'Imported from resume' : 'AI-extracted'}">${b.isImported ? '📄' : '✨'}</span>
               <span class="flex-1">${b.text}</span>
-              <button 
-                class="copy-bullet-btn opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-white p-1" 
-                data-bullet-text="${b.text.replace(/"/g, '&quot;')}"
-                title="Copy bullet">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-              </button>
+              <div class="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button 
+                  class="copy-bullet-btn text-gray-400 hover:text-white p-1" 
+                  data-bullet-text="${b.text.replace(/"/g, '&quot;')}"
+                  title="Copy bullet">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </button>
+                <button 
+                  class="delete-bullet-btn text-gray-400 hover:text-red-400 p-1" 
+                  data-bullet-text="${b.text.replace(/"/g, '&quot;')}"
+                  title="Delete bullet">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
             </li>
           `).join('')}
         </ul>
@@ -677,6 +695,15 @@ function renderBullets() {
       } catch (err) {
         console.error('Failed to copy:', err);
       }
+    });
+  });
+  
+  // Add click handlers for delete buttons
+  document.querySelectorAll('.delete-bullet-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const text = btn.dataset.bulletText;
+      deleteBullet(text);
     });
   });
 }
