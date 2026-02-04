@@ -25,6 +25,7 @@ const statusEl = document.getElementById('status');
 
 const bulletsList = document.getElementById('bulletsList');
 const exportBulletsBtn = document.getElementById('exportBulletsBtn');
+const startOverBtn = document.getElementById('startOverBtn');
 
 // Bullets and skills state
 let allBullets = [];
@@ -36,6 +37,42 @@ let isStreaming = false;
 let sessionId = null;
 let parsedResume = null;
 let selectedMethodology = 'Open';
+
+// ============= Start Over =============
+
+function startOver() {
+  // Reset state
+  isStreaming = false;
+  sessionId = null;
+  parsedResume = null;
+  selectedMethodology = 'Open';
+  allBullets = [];
+  allSkills = [];
+  pendingBullet = null;
+  isEditingPending = false;
+  
+  // Clear form inputs
+  resumeFile.value = '';
+  resumeText.value = '';
+  linkedinUrl.value = '';
+  
+  // Reset UI
+  messagesEl.innerHTML = '';
+  renderBullets();
+  renderSkills();
+  
+  // Hide all sections except upload
+  uploadSection.classList.remove('hidden');
+  timelineSection.classList.add('hidden');
+  methodologySection.classList.add('hidden');
+  chatSection.classList.add('hidden');
+  bulletsSidebar.classList.add('hidden');
+  startOverBtn.classList.add('hidden');
+  
+  setStatus('Ready - Upload your resume to get started');
+}
+
+startOverBtn.addEventListener('click', startOver);
 
 // ============= Upload & Parse =============
 
@@ -172,6 +209,7 @@ linkedinBtn.addEventListener('click', async () => {
 function showTimeline(resume, mostRecentIndex) {
   uploadSection.classList.add('hidden');
   timelineSection.classList.remove('hidden');
+  startOverBtn.classList.remove('hidden');
   
   // Build timeline HTML
   let html = '';
