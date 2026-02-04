@@ -25,6 +25,8 @@ const statusEl = document.getElementById('status');
 
 const bulletsList = document.getElementById('bulletsList');
 const exportBulletsBtn = document.getElementById('exportBulletsBtn');
+const downloadBulletsBtn = document.getElementById('downloadBulletsBtn');
+const exportButtons = document.getElementById('exportButtons');
 const startOverBtn = document.getElementById('startOverBtn');
 
 // Bullets and skills state
@@ -640,7 +642,7 @@ function renderBullets() {
   
   if (allBullets.length === 0 && !pendingBullet) {
     bulletsList.innerHTML = '<p class="text-gray-500 text-sm">Bullets will appear here as you chat...</p>';
-    exportBulletsBtn.classList.add('hidden');
+    exportButtons.classList.add('hidden');
     return;
   }
 
@@ -691,7 +693,7 @@ function renderBullets() {
 
   bulletsList.innerHTML = html;
   if (allBullets.length > 0) {
-    exportBulletsBtn.classList.remove('hidden');
+    exportButtons.classList.remove('hidden');
   }
   
   // Add click handlers for pending bullet buttons
@@ -778,4 +780,47 @@ exportBulletsBtn.addEventListener('click', () => {
       exportBulletsBtn.textContent = originalText;
     }, 2000);
   });
+});
+
+// Download bullets as file
+downloadBulletsBtn.addEventListener('click', () => {
+  if (allBullets.length === 0) return;
+
+  // Group and format
+  const groups = {};
+  for (const bullet of allBullets) {
+    const key = `${bullet.company}|${bullet.title}`;
+    if (!groups[key]) {
+      groups[key] = { company: bullet.company, title: bullet.title, bullets: [] };
+    }
+    groups[key].bullets.push(bullet);
+  }
+
+  let text = 'GENERATED RESUME BULLETS\n========================\n\n';
+  for (const group of Object.values(groups)) {
+    text += `${group.title} | ${group.company}\n`;
+    text += '-'.repeat(40) + '\n';
+    for (const b of group.bullets) {
+      text += `• ${b.text}\n`;
+    }
+    text += '\n';
+  }
+
+  // Create and download file
+  const blob = new Blob([text], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'resume-bullets.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  // Show feedback
+  const originalText = downloadBulletsBtn.textContent;
+  downloadBulletsBtn.textContent = '✓ Downloaded!';
+  setTimeout(() => {
+    downloadBulletsBtn.textContent = originalText;
+  }, 2000);
 });
